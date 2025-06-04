@@ -1,10 +1,6 @@
 # src/gui/main_window.py
 import customtkinter as ctk
 from gui.login import icono_logotipo, mainwin_bg, boton_controlstock, disabledboton_controlstock, boton_gestionventas
-from gui.stock_window import StockWindow
-from gui.ventas_window import VentasWindow
-from gui.login import LoginWindow  # Para volver a mostrar el login
-from gui.form_agregar_usuario import FormAgregarUsuario
 from utils.utilidades import Utilidades
 from PIL import Image
 from customtkinter import CTkImage
