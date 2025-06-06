@@ -3,6 +3,7 @@ import customtkinter as ctk
 import tkinter as tk
 from tkinter import ttk, messagebox
 from logica.gestor_clientes import ClienteManager
+from gui.login import icono_logotipo
 import tkinter.font as tkFont
 
 class ClientesWindow(ctk.CTkToplevel):
@@ -91,6 +92,9 @@ class ClientesWindow(ctk.CTkToplevel):
         # ─── Botón Volver ──────────────────────────────────────────────────
         self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy, width=120)
         self.btn_volver.pack(pady=(0, 12))
+
+        # Establece el ícono tras 150ms
+        self.after(150, lambda: self.iconbitmap(icono_logotipo))
 
         # Carga inicial
         self._cargar_clientes()
