@@ -7,7 +7,7 @@ class TablaCreator:
     Clase encargada de crear la base de datos 'ventas_db' y sus tablas asociadas.
     Esto incluye:
       - La creación de la base de datos (si no existe)
-      - Tablas: productos, usuarios, facturas y factura_detalles.
+      - Tablas: productos, usuarios, clientes, facturas y factura_detalles.
       - Inserción de un usuario administrador por defecto (si no existe)
     """
     
@@ -44,7 +44,21 @@ class TablaCreator:
                 )
             """
             cursor.execute(sentencia_usuarios)
-
+            
+            # Crear la tabla de clientes
+            sentencia_clientes = """
+                CREATE TABLE IF NOT EXISTS clientes (
+                    clienteId INT AUTO_INCREMENT PRIMARY KEY,
+                    nombre VARCHAR(100) NOT NULL,
+                    apellido VARCHAR(100) NOT NULL,
+                    cuil VARCHAR(20) NOT NULL UNIQUE,
+                    telefono VARCHAR(20),
+                    email VARCHAR(100),
+                    direccion VARCHAR(150)
+                )
+            """
+            cursor.execute(sentencia_clientes)
+            
             # Crear la tabla de facturas
             sentencia_facturas = """
                 CREATE TABLE IF NOT EXISTS facturas (

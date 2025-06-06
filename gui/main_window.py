@@ -112,6 +112,10 @@ class MainWindow(ctk.CTk):
         )
         self.btn_ventas = ctk.CTkButton(self.main_frame, fg_color="#273D27", image=imagen_boton_gestionventa, text="", command=self.abrir_ventas, corner_radius=0)
         self.btn_ventas.pack(pady=10, padx=10)
+
+        # Nuevo botón para acceder a la gestión de clientes
+        self.btn_clientes = ctk.CTkButton(self.main_frame, text="Clientes", fg_color="#273D27", command=self.abrir_clientes, corner_radius=0)
+        self.btn_clientes.pack(pady=10, padx=10)
         
     def abrir_admin_usuarios(self):
         from gui.admin_usuarios_window import AdminUsuariosWindow
@@ -151,9 +155,15 @@ class MainWindow(ctk.CTk):
         self.wait_window(ventana_ventas)
         self.deiconify()
         
+    def abrir_clientes(self):
+        self.withdraw()
+        from gui.clientes_window import ClientesWindow
+        ventana_clientes = ClientesWindow(self)
+        self.wait_window(ventana_clientes)
+        self.deiconify()
+        
 # Ejemplo de uso:
 if __name__ == "__main__":
-    # Se simula un usuario logueado, por ejemplo:
     user_info = {"usuario": "admin", "role": "admin"}
     app = MainWindow(user_info)
     app.mainloop()
