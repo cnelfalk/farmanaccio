@@ -1,6 +1,6 @@
 # src/gui/main_window.py
 import customtkinter as ctk
-from gui.login import icono_logotipo, mainwin_bg, boton_controlstock, disabledboton_controlstock, boton_gestionventas
+from gui.login import icono_logotipo, mainwin_bg, boton_controlstock, disabledboton_controlstock, boton_gestionventas, boton_gestionclientes
 from utils.utilidades import Utilidades
 from PIL import Image
 from customtkinter import CTkImage
@@ -44,7 +44,7 @@ class MainWindow(ctk.CTk):
         self.user_button = ctk.CTkButton(
             self.header_frame,
             text=f"👤 {self.user_info['usuario'].title()}",
-            fg_color="#99945E",
+            fg_color="#757033",
             command=self.toggle_user_menu
         )
         self.user_button.pack(side="left", padx=5, pady=5)
@@ -112,7 +112,16 @@ class MainWindow(ctk.CTk):
         )
         self.btn_ventas = ctk.CTkButton(self.main_frame, fg_color="#273D27", image=imagen_boton_gestionventa, text="", command=self.abrir_ventas, corner_radius=0)
         self.btn_ventas.pack(pady=10, padx=10)
-        
+
+        imagen_boton_gestionclientes = CTkImage(
+            light_image=Image.open(boton_gestionclientes),
+            dark_image=Image.open(boton_gestionclientes),
+            size=(163, 38)
+        )
+        # Nuevo botón para acceder a la gestión de clientes
+        self.btn_clientes = ctk.CTkButton(self.main_frame, text="", image=imagen_boton_gestionclientes, fg_color="#273D27", command=self.abrir_clientes, corner_radius=0)
+        self.btn_clientes.pack(pady=10, padx=10)
+
     def abrir_admin_usuarios(self):
         from gui.admin_usuarios_window import AdminUsuariosWindow
         AdminUsuariosWindow(self, self.user_info["usuario"])
@@ -146,14 +155,20 @@ class MainWindow(ctk.CTk):
         
     def abrir_ventas(self):
         self.withdraw()
-        from gui.ventas_window import VentasWindow
+        from gui.ventas.ventas_window import VentasWindow
         ventana_ventas = VentasWindow(self)
         self.wait_window(ventana_ventas)
         self.deiconify()
         
+    def abrir_clientes(self):
+        self.withdraw()
+        from gui.clientes_window import ClientesWindow
+        ventana_clientes = ClientesWindow(self)
+        self.wait_window(ventana_clientes)
+        self.deiconify()
+        
 # Ejemplo de uso:
 if __name__ == "__main__":
-    # Se simula un usuario logueado, por ejemplo:
     user_info = {"usuario": "admin", "role": "admin"}
     app = MainWindow(user_info)
     app.mainloop()

@@ -17,6 +17,7 @@ mainwin_bg = os.path.join(SUB_DIR, "mainwin-bg.png")
 boton_controlstock = os.path.join(SUB_DIR, "boton-control-de-stock.png")
 disabledboton_controlstock = os.path.join(SUB_DIR, "boton-control-de-stock-deshabilitado.png")
 boton_gestionventas = os.path.join(SUB_DIR, "boton-gestion-de-ventas.png")
+boton_gestionclientes = os.path.join(SUB_DIR, "boton-gestion-de-clientes.png")
 creditos_fondo = os.path.join(SUB_DIR, "creditos.png")
 
 class LoginWindow(ctk.CTk):
