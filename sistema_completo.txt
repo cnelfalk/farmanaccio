@@ -1,0 +1,2569 @@
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\farmanaccio-theme.json
+
+...-------------------...
+{
+    "CTk": {
+      "fg_color": "#A89866"
+    },
+    "CTkToplevel": {
+      "fg_color": "#374C23"
+    },
+    "CTkFrame": {
+      "corner_radius": 5,
+      "border_width": 0,
+      "fg_color": "#C1A766",
+      "top_fg_color": "#36273D",
+      "border_color": ["gray65", "gray28"]
+    },
+    "CTkButton": {
+      "corner_radius": 6,
+      "border_width": 0,
+      "fg_color": "#A89866",
+      "hover_color": "#544B33",
+      "border_color": "#593D27",
+      "text_color": "white",
+      "text_color_disabled": ["gray74", "gray60"]
+    },
+    "CTkLabel": {
+      "corner_radius": 0,
+      "fg_color": "transparent",
+      "text_color": ["white", "gray84"]
+    },
+    "CTkEntry": {
+      "corner_radius": 6,
+      "border_width": 2,
+      "fg_color": "#F9F9FA",
+      "border_color": "#979DA2",
+      "text_color": "black",
+      "placeholder_text_color": ["gray52", "gray62"]
+    },
+    "CTkCheckBox": {
+      "corner_radius": 6,
+      "border_width": 3,
+      "fg_color": ["#3a7ebf", "#1f538d"],
+      "border_color": ["#3E454A", "#949A9F"],
+      "hover_color": ["#325882", "#14375e"],
+      "checkmark_color": ["#DCE4EE", "gray90"],
+      "text_color": ["gray14", "gray84"],
+      "text_color_disabled": ["gray60", "gray45"]
+    },
+    "CTkComboBox": {
+      "corner_radius": 6,
+      "border_width": 2,
+      "fg_color": "#F9F9FA",
+      "border_color": "#979DA2",
+      "button_color": "#9D47C1",
+      "button_hover_color": "#3E2789",
+      "text_color": "black",
+      "text_color_disabled": ["gray74", "gray60"]
+    },
+    "CTkRadioButton": {
+      "corner_radius": 1000,
+      "border_width_checked": 6,
+      "border_width_unchecked": 3,
+      "fg_color": ["#9DB754", "9DB754"],
+      "border_color": ["#3E454A", "#949A9F"],
+      "hover_color": ["#325882", "#14375e"],
+      "text_color": ["gray14", "gray84"],
+      "text_color_disabled": ["gray60", "gray45"]
+    },
+    "CTkScrollbar": {
+      "corner_radius": 1000,
+      "border_spacing": 4,
+      "fg_color": "transparent",
+      "button_color": ["gray55", "gray41"],
+      "button_hover_color": ["gray40", "gray53"]
+    },
+    "DropdownMenu": {
+      "fg_color": ["gray90", "gray20"],
+      "hover_color": ["gray75", "gray28"],
+      "text_color": ["gray14", "gray84"]
+    },
+    "CTkFont": {
+      "macOS": {
+        "family": "SF Display",
+        "size": 13,
+        "weight": "normal"
+      },
+      "Windows": {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "normal"
+      },
+      "Linux": {
+        "family": "Roboto",
+        "size": 13,
+        "weight": "normal"
+      }
+    }
+  }
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\generar_sistema_txt.py
+
+...-------------------...
+import os
+
+def generar_documento_txt(ruta_base: str, archivo_salida: str):
+    """
+    Recorre recursivamente la ruta base y, para cada archivo con extensión .py o .json,
+    escribe su contenido en el archivo de salida, separando cada módulo con un separador.
+
+    Args:
+        ruta_base (str): Directorio base desde donde comenzar la búsqueda.
+        archivo_salida (str): Nombre del archivo TXT a generar.
+    """
+    separador = "\n...-------------------...\n"
+    with open(archivo_salida, "w", encoding="utf-8") as out_file:
+        for root, dirs, files in os.walk(ruta_base):
+            for archivo in files:
+                if archivo.endswith(".py") or archivo.endswith(".json"):
+                    ruta_archivo = os.path.join(root, archivo)
+                    # Escribe el encabezado del archivo
+                    out_file.write(separador)
+                    out_file.write(f"Archivo: {ruta_archivo}\n")
+                    out_file.write(separador)
+                    try:
+                        with open(ruta_archivo, "r", encoding="utf-8") as in_file:
+                            contenido = in_file.read()
+                        out_file.write(contenido)
+                    except Exception as e:
+                        out_file.write(f"Error al leer el archivo: {e}")
+                    out_file.write("\n")
+        out_file.write(separador)
+    print(f"Documento generado en: {archivo_salida}")
+
+if __name__ == "__main__":
+    # Si el script se encuentra al mismo nivel que main.py,
+    # establecemos la ruta base como el directorio actual.
+    ruta_base = os.path.dirname(os.path.realpath(__file__))
+    generar_documento_txt(ruta_base, "sistema_completo.txt")
+
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\principal.py
+
+...-------------------...
+# src/principal.py
+import customtkinter as ctk
+from pathlib import Path
+from datos.crear_tablas import TablaCreator
+
+# Configuración del tema y apariencia de CustomTkinter
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme(Path(__file__).parent / "farmanaccio-theme.json")
+
+def principal():
+    # Crear la base de datos y tablas (productos, usuarios, etc.) usando la clase TablaCreator
+    creador = TablaCreator()
+    creador.crear_base_de_datos_y_tablas()
+    
+    # Iniciar la pantalla de login
+    from gui.login import LoginWindow
+    login = LoginWindow()
+    login.mainloop()
+
+if __name__ == "__main__":
+    principal() 
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\datos\conexion_bd.py
+
+...-------------------...
+# src/datos/conexion_bd.py
+import mysql.connector
+import os
+from mysql.connector import Error
+from tkinter import messagebox
+
+class ConexionBD:
+    """
+    Clase para gestionar las conexiones a la base de datos MySQL.
+    Intenta conectarse a un servidor remoto y, en caso de fallo,
+    intenta conectarse localmente (por ejemplo, con XAMPP).
+    """
+
+    @staticmethod
+    def obtener_conexion():
+        try:
+            print("Conectando a conexión local (XAMPP)...")
+            conexion_local = mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="",
+                port=3306
+            )
+            print("Conexión local exitosa.")
+            return conexion_local
+        except Error as e_local:
+            messagebox.showerror(
+                "Error de conexión",
+                f"No se pudo conectar localmente a MySQL.\n\n"
+                f"Error local: {e_local}"
+            )
+            exit()
+            return None
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    conexion = ConexionBD.obtener_conexion()
+    if conexion:
+        print("Conexión establecida exitosamente.")
+        conexion.close()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\datos\crear_tablas.py
+
+...-------------------...
+# src/datos/crear_tablas.py
+from datos.conexion_bd import ConexionBD
+from mysql.connector import Error
+
+class TablaCreator:
+    """
+    Clase encargada de crear la base de datos 'ventas_db' y sus tablas asociadas.
+    Esto incluye:
+      - La creación de la base de datos (si no existe)
+      - Tablas: productos, usuarios, clientes, facturas y factura_detalles.
+      - Inserción de un usuario administrador por defecto (si no existe)
+    """
+    
+    def crear_base_de_datos_y_tablas(self):
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                raise Exception("No se pudo establecer la conexión con el servidor SQL.")
+            
+            cursor = conexion.cursor()
+            
+            # Crear la base de datos si no existe
+            cursor.execute("CREATE DATABASE IF NOT EXISTS ventas_db")
+            cursor.execute("USE ventas_db")
+            
+            # Crear la tabla de productos
+            sentencia_productos = """
+                CREATE TABLE IF NOT EXISTS productos (
+                    prodId INT AUTO_INCREMENT PRIMARY KEY,
+                    nombre VARCHAR(100) NOT NULL,
+                    precio DECIMAL(10,2) NOT NULL,
+                    stock INT NOT NULL
+                )
+            """
+            cursor.execute(sentencia_productos)
+            
+            # Crear la tabla de usuarios
+            sentencia_usuarios = """
+                CREATE TABLE IF NOT EXISTS usuarios (
+                    userId INT AUTO_INCREMENT PRIMARY KEY,
+                    usuario VARCHAR(50) NOT NULL UNIQUE,
+                    password VARCHAR(100) NOT NULL,
+                    role ENUM('admin','empleado') NOT NULL
+                )
+            """
+            cursor.execute(sentencia_usuarios)
+            
+            # Crear la tabla de clientes
+            sentencia_clientes = """
+                CREATE TABLE IF NOT EXISTS clientes (
+                    clienteId INT AUTO_INCREMENT PRIMARY KEY,
+                    nombre VARCHAR(100) NOT NULL,
+                    apellido VARCHAR(100) NOT NULL,
+                    cuil VARCHAR(20) NOT NULL UNIQUE,
+                    telefono VARCHAR(20),
+                    email VARCHAR(100),
+                    direccion VARCHAR(150)
+                )
+            """
+            cursor.execute(sentencia_clientes)
+            
+            # Crear la tabla de facturas
+            sentencia_facturas = """
+                CREATE TABLE IF NOT EXISTS facturas (
+                    facturaId INT AUTO_INCREMENT PRIMARY KEY,
+                    fechaEmision DATE DEFAULT CURRENT_DATE,
+                    horaEmision TIME,
+                    total_neto DECIMAL(10, 2) NOT NULL,
+                    total_bruto DECIMAL (10, 2) NOT NULL,
+                    descuento DECIMAL(5, 2) DEFAULT 0.00
+                )
+            """
+            cursor.execute(sentencia_facturas)
+
+            # Crear la tabla de factura_detalles
+            sentencia_factura_detalles = """
+                CREATE TABLE IF NOT EXISTS factura_detalles (
+                    facturaDetalleId INT AUTO_INCREMENT PRIMARY KEY,
+                    facturaId INT,
+                    prodId INT,
+                    cantidad INT,
+                    precioUnitario DECIMAL(10, 2) NOT NULL,
+                    FOREIGN KEY (facturaId) REFERENCES facturas(facturaId)
+                )
+            """
+            cursor.execute(sentencia_factura_detalles)
+            
+            # Insertar un administrador por defecto si no existe
+            cursor.execute("SELECT * FROM usuarios WHERE usuario='admin'")
+            if cursor.fetchone() is None:
+                cursor.execute("INSERT INTO usuarios (usuario, password, role) VALUES ('admin', 'admin', 'admin')")
+            
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            print("Base de datos y tablas creadas exitosamente.")
+        except Error as e:
+            print("Error durante la creación de la base de datos y tablas:", e)
+        except Exception as ex:
+            print("Error:", ex)
+
+if __name__ == "__main__":
+    # Si el script se ejecuta directamente, se crea la base de datos y las tablas.
+    creador = TablaCreator()
+    creador.crear_base_de_datos_y_tablas()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\gui\admin_usuarios_window.py
+
+...-------------------...
+# src/gui/admin_usuarios_window.py
+import customtkinter as ctk
+import tkinter.messagebox as messagebox
+from customtkinter import CTkToplevel
+from gui.login import icono_logotipo
+from logica.gestor_usuarios import UsuarioManager  # Actualizado: se importa la clase
+
+class AdminUsuariosWindow(CTkToplevel):
+    def __init__(self, parent, usuario_actual):
+        super().__init__(parent)
+        self.title("Administrar Usuarios")
+        self.grab_set()
+        self.resizable(False, False)
+
+        self.usuario_actual = usuario_actual
+        # Instanciamos la clase UsuarioManager
+        self.usuario_manager = UsuarioManager()
+
+        self.tabla_frame = ctk.CTkFrame(self)
+        self.tabla_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        self.labels = ["ID", "Usuario", "Contraseña", "Rol", "Acciones"]
+        for i, texto in enumerate(self.labels):
+            label = ctk.CTkLabel(self.tabla_frame, text=texto, font=("Arial", 12, "bold"))
+            label.grid(row=0, column=i, padx=5, pady=5)
+
+        self.cargar_usuarios()
+
+        # Aseguramos que se establezca el ícono con iconbitmap tras 100ms
+        self.after(200, lambda: self.iconbitmap(icono_logotipo))
+
+    def cargar_usuarios(self):
+        # Limpiamos los widgets de la tabla excepto la cabecera
+        for widget in self.tabla_frame.winfo_children():
+            if int(widget.grid_info()["row"]) > 0:
+                widget.destroy()
+
+        # Llamamos al método de la clase para obtener los usuarios
+        usuarios = self.usuario_manager.obtener_usuarios()
+        for i, usuario in enumerate(usuarios, start=1):
+            id_, nombre, password, rol = usuario
+
+            # Mostrar el ID como etiqueta (no editable)
+            label_id = ctk.CTkLabel(self.tabla_frame, text=str(id_))
+            label_id.grid(row=i, column=0, padx=5, pady=5)
+
+            entry_usuario = ctk.CTkEntry(self.tabla_frame)
+            entry_usuario.insert(0, nombre)
+            entry_usuario.grid(row=i, column=1)
+
+            entry_password = ctk.CTkEntry(self.tabla_frame)
+            entry_password.insert(0, password)
+            entry_password.grid(row=i, column=2)
+
+            combo_rol = ctk.CTkComboBox(self.tabla_frame, values=["admin", "empleado"], width=120)
+            combo_rol.set(rol.lower())
+            combo_rol.grid(row=i, column=3)
+
+            # Deshabilitar el cambio de rol si es el usuario actual
+            if nombre == self.usuario_actual:
+                combo_rol.configure(state="disabled")
+
+            btn_mod = ctk.CTkButton(
+                self.tabla_frame, text="Modificar", width=10,
+                command=lambda i=i, id_=id_: self.modificar_usuario(i, id_)
+            )
+            btn_mod.grid(row=i, column=4, padx=2)
+
+            btn_del = ctk.CTkButton(
+                self.tabla_frame, text="Eliminar", fg_color="red", width=10,
+                command=lambda id_=id_: self.eliminar_usuario(id_)
+            )
+            btn_del.grid(row=i, column=5, padx=2)
+
+    def modificar_usuario(self, fila, id_):
+        # Extraer los nuevos valores de los widgets
+        nuevo_usuario = self.tabla_frame.grid_slaves(row=fila, column=1)[0].get()
+        nuevo_password = self.tabla_frame.grid_slaves(row=fila, column=2)[0].get()
+        nuevo_rol = self.tabla_frame.grid_slaves(row=fila, column=3)[0].get().strip().lower()
+
+        # Obtener los datos originales usando el método actualizado
+        usuarios = self.usuario_manager.obtener_usuarios()
+        original_usuario = None
+        for u in usuarios:
+            if u[0] == id_:
+                original_usuario, original_password, original_rol = u[1], u[2], u[3]
+                break
+
+        if original_usuario is None:
+            messagebox.showerror("Error", "Usuario no encontrado.")
+            return
+
+        if len(nuevo_password) < 5:
+            messagebox.showerror("Error", "No puede ingresar una contraseña menor a cinco carácteres.")
+            return
+
+        # Comparar si hubo cambios
+        if (nuevo_usuario == original_usuario and
+            nuevo_password == original_password and
+            nuevo_rol == original_rol):
+            messagebox.showinfo("Sin cambios", "No se detectaron cambios para actualizar.")
+            return
+
+        if nuevo_rol not in ("admin", "empleado"):
+            messagebox.showwarning("Rol inválido", "Debe ser 'admin' o 'empleado'")
+            return
+
+        # Llamar al método de actualización de la clase UsuarioManager
+        if self.usuario_manager.actualizar_usuario(id_, nuevo_usuario, nuevo_password, nuevo_rol):
+            messagebox.showinfo("Éxito", "Usuario actualizado")
+            self.cargar_usuarios()
+        else:
+            messagebox.showerror("Error", "No se pudo actualizar. Asegúrese de que los datos sean válidos.")
+
+    def eliminar_usuario(self, id_):
+        usuarios = self.usuario_manager.obtener_usuarios()
+
+        # Buscar el nombre del usuario que se quiere eliminar
+        usuario_a_eliminar = None
+        for u in usuarios:
+            if u[0] == id_:
+                usuario_a_eliminar = u[1]
+                break
+
+        if usuario_a_eliminar is None:
+            messagebox.showerror("Error", "Usuario no encontrado.")
+            return
+
+        if usuario_a_eliminar == self.usuario_actual:
+            messagebox.showwarning("Operación no permitida", "No puede eliminar el usuario con sesión activa.")
+            return
+
+        if len(usuarios) <= 1:
+            messagebox.showwarning("Operación no permitida", "No puede eliminar el único usuario del sistema.")
+            return
+
+        if messagebox.askyesno("Confirmar", f"¿Seguro que desea eliminar al usuario '{usuario_a_eliminar}'?"):
+            # Llamar al método de eliminación de la clase
+            if self.usuario_manager.eliminar_usuario(id_):
+                messagebox.showinfo("Éxito", "Usuario eliminado correctamente.")
+                self.cargar_usuarios()
+            else:
+                messagebox.showerror("Error", "No se pudo eliminar el usuario.")
+
+if __name__ == "__main__":
+    import sys
+    import os
+
+    # Agregar el path raíz del proyecto (donde está "src") al sys.path
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    src_root = os.path.abspath(os.path.join(current_dir, "..", ".."))
+    if src_root not in sys.path:
+        sys.path.insert(0, src_root)
+
+    import tkinter as tk
+    from gui.admin_usuarios_window import AdminUsuariosWindow
+
+    root = tk.Tk()
+    root.withdraw()
+    app = AdminUsuariosWindow(root, "admin")
+    app.mainloop()
+
+
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\gui\clientes_window.py
+
+...-------------------...
+# src/gui/clientes_window.py
+import customtkinter as ctk
+import tkinter as tk
+from tkinter import ttk, messagebox
+from logica.gestor_clientes import ClienteManager
+import tkinter.font as tkFont
+
+class ClientesWindow(ctk.CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Gestión de Clientes")
+        self.geometry("820x620")
+        self.resizable(False, False)
+
+        self.cliente_manager = ClienteManager()
+        self.cliente_actual_id = None
+        self.clientes_map = {}  # id → dict
+
+        # ─── Búsqueda ──────────────────────────────────────────────────────
+        self.frame_search = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_search.pack(fill="x", padx=10, pady=(10, 0))
+
+        self.entry_search = ctk.CTkEntry(self.frame_search, placeholder_text="Buscar por Nombre, Apellido o CUIL...")
+        self.entry_search.pack(side="left", fill="x", expand=True, padx=(0, 10))
+
+        self.btn_search = ctk.CTkButton(self.frame_search, text="Buscar", width=100, command=self._buscar_clientes)
+        self.btn_search.pack(side="left", padx=5)
+
+        self.btn_mostrar_todos = ctk.CTkButton(self.frame_search, text="Mostrar Todos", width=110, command=self._cargar_clientes)
+        self.btn_mostrar_todos.pack(side="left", padx=5)
+
+        # ─── Listado con scrollbars ────────────────────────────────────────
+        self.frame_tree_outer = ctk.CTkFrame(self)
+        self.frame_tree_outer.pack(fill="both", padx=10, pady=10, expand=False)
+
+        self.frame_tree = ctk.CTkFrame(self.frame_tree_outer)
+        self.frame_tree.pack(fill="both", expand=True)
+        self.frame_tree.configure(height=260)  # altura fija
+
+        cols = ("ID", "Nombre", "Apellido", "CUIL", "Teléfono", "Email", "Dirección")
+        self.tree = ttk.Treeview(self.frame_tree, columns=cols, show="headings")
+        for col in cols:
+            anchor = "center" if col == "ID" else "w"
+            self.tree.heading(col, text=col)
+            self.tree.column(col, width=120, anchor=anchor)
+
+        vsb = ttk.Scrollbar(self.frame_tree, orient="vertical", command=self.tree.yview)
+        hsb = ttk.Scrollbar(self.frame_tree, orient="horizontal", command=self.tree.xview)
+        self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
+
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        vsb.grid(row=0, column=1, sticky="ns")
+        hsb.grid(row=1, column=0, columnspan=2, sticky="ew")
+        self.frame_tree.rowconfigure(0, weight=1)
+        self.frame_tree.columnconfigure(0, weight=1)
+
+        self.tree.bind("<<TreeviewSelect>>", self._on_select)
+
+        # ─── Formulario ────────────────────────────────────────────────────
+        self.frame_form = ctk.CTkFrame(self)
+        self.frame_form.pack(fill="x", padx=10, pady=(0, 10))
+
+        fields = [
+            ("nombre",   "Nombre"),
+            ("apellido", "Apellido"),
+            ("cuil",     "CUIL"),
+            ("telefono", "Teléfono"),
+            ("email",    "Email"),
+            ("direccion","Dirección")
+        ]
+        self.entries = {}
+        for i, (key, label) in enumerate(fields):
+            ctk.CTkLabel(self.frame_form, text=f"{label}:").grid(row=i, column=0, sticky="e", padx=5, pady=5)
+            ent = ctk.CTkEntry(self.frame_form)
+            ent.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
+            self.entries[key] = ent
+        self.frame_form.grid_columnconfigure(1, weight=1)
+
+        # ─── Botones CRUD ──────────────────────────────────────────────────
+        self.frame_btns = ctk.CTkFrame(self.frame_form, fg_color="transparent")
+        self.frame_btns.grid(row=len(fields), column=0, columnspan=2, pady=10)
+
+        self.btn_agregar   = ctk.CTkButton(self.frame_btns, text="Agregar", width=100, command=self._agregar)
+        self.btn_modificar = ctk.CTkButton(self.frame_btns, text="Modificar", width=100, command=self._modificar)
+        self.btn_eliminar  = ctk.CTkButton(self.frame_btns, text="Eliminar", fg_color="red", width=100, command=self._eliminar)
+
+        self.btn_agregar.grid(row=0, column=0, padx=5)
+        self.btn_modificar.grid(row=0, column=1, padx=5)
+        self.btn_eliminar.grid(row=0, column=2, padx=5)
+
+        # ─── Botón Volver ──────────────────────────────────────────────────
+        self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy, width=120)
+        self.btn_volver.pack(pady=(0, 12))
+
+        # Carga inicial
+        self._cargar_clientes()
+
+    # ───────────────────────────────── CRUD y utilidades ─────────────────────────────────
+    def _cargar_clientes(self):
+        self._poblar_tree(self.cliente_manager.obtener_clientes())
+        self._reset_form()
+
+    def _poblar_tree(self, lista_clientes):
+        for row in self.tree.get_children():
+            self.tree.delete(row)
+        self.clientes_map.clear()
+        for c in lista_clientes:
+            self.clientes_map[c["clienteId"]] = c
+            self.tree.insert("", "end", values=(
+                c["clienteId"], c["nombre"], c["apellido"], c["cuil"],
+                c["telefono"], c["email"], c["direccion"]
+            ))
+        self._ajustar_ancho_id()
+
+    def _buscar_clientes(self):
+        term = self.entry_search.get().strip().lower()
+        if not term:
+            self._cargar_clientes()
+            return
+        filtrados = [
+            c for c in self.cliente_manager.obtener_clientes()
+            if term in c["nombre"].lower()
+            or term in c["apellido"].lower()
+            or term in c["cuil"].lower()
+        ]
+        self._poblar_tree(filtrados)
+
+    def _ajustar_ancho_id(self):
+        if not self.clientes_map:
+            self.tree.column("ID", width=50)
+            return
+        max_digits = max(len(str(cid)) for cid in self.clientes_map)
+        new_px = tkFont.Font().measure("0" * max_digits) + 16
+        self.tree.column("ID", width=new_px)
+
+    def _reset_form(self):
+        self.cliente_actual_id = None
+        for ent in self.entries.values():
+            ent.delete(0, tk.END)
+        self.btn_agregar.configure(state="normal")
+        self.btn_modificar.configure(state="disabled")
+        self.btn_eliminar.configure(state="disabled")
+
+    def _on_select(self, _):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        cid = int(self.tree.item(sel[0], "values")[0])
+        c = self.clientes_map[cid]
+        for k in self.entries:
+            self.entries[k].delete(0, tk.END)
+            self.entries[k].insert(0, c.get(k, ""))
+        self.cliente_actual_id = cid
+        self.btn_agregar.configure(state="disabled")
+        self.btn_modificar.configure(state="normal")
+        self.btn_eliminar.configure(state="normal")
+
+    def _validar(self):
+        if not (self.entries["nombre"].get().strip() and
+                self.entries["apellido"].get().strip() and
+                self.entries["cuil"].get().strip()):
+            messagebox.showwarning("Atención", "Nombre, Apellido y CUIL son obligatorios.")
+            return False
+        return True
+
+    def _agregar(self):
+        if not self._validar(): return
+        datos = {k: v.get().strip() for k, v in self.entries.items()}
+        if self.cliente_manager.crear_cliente(datos):
+            messagebox.showinfo("Éxito", "Cliente agregado.")
+            self._cargar_clientes()
+        else:
+            messagebox.showerror("Error", "No se pudo agregar el cliente.")
+
+    def _modificar(self):
+        if self.cliente_actual_id is None or not self._validar(): return
+        datos = {k: v.get().strip() for k, v in self.entries.items()}
+        if self.cliente_manager.actualizar_cliente(self.cliente_actual_id, datos):
+            messagebox.showinfo("Éxito", "Cliente actualizado.")
+            self._cargar_clientes()
+        else:
+            messagebox.showerror("Error", "No se pudo actualizar el cliente.")
+
+    def _eliminar(self):
+        if self.cliente_actual_id is None: return
+        if messagebox.askyesno("Confirmar", "¿Eliminar este cliente?"):
+            if self.cliente_manager.eliminar_cliente(self.cliente_actual_id):
+                messagebox.showinfo("Éxito", "Cliente eliminado.")
+                self._cargar_clientes()
+            else:
+                messagebox.showerror("Error", "No se pudo eliminar el cliente.")
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    root.withdraw()
+    ClientesWindow(root).mainloop()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\gui\form_agregar_usuario.py
+
+...-------------------...
+# src/gui/form_agregar_usuario.py
+import customtkinter as ctk
+import tkinter.messagebox as messagebox
+from gui.login import icono_logotipo
+from customtkinter import CTkToplevel
+from logica.gestor_usuarios import UsuarioManager  # Se importa la clase
+
+class FormAgregarUsuario(CTkToplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Agregar nuevo usuario")
+        self.resizable(False, False)
+
+        # Definir dimensiones de la ventana
+        window_width = 300
+        window_height = 280
+
+        # Calcular la posición para centrar la ventana
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+
+        # Establecer la geometría centrada
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        self.label_nombre = ctk.CTkLabel(self, text="Nombre de usuario:")
+        self.label_nombre.pack(pady=5)
+        self.entry_nombre = ctk.CTkEntry(self)
+        self.entry_nombre.pack(pady=5)
+
+        self.password_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.password_frame.pack(pady=5)
+
+        self.label_password = ctk.CTkLabel(self.password_frame, text="Contraseña:")
+        self.label_password.pack(pady=5)
+        self.entry_password = ctk.CTkEntry(self.password_frame, show="*")
+        self.entry_password.pack(side="left", pady=5)
+
+        self.password_visible = False
+        self.toggle_btn = ctk.CTkButton(
+            self.password_frame,
+            text="👁",
+            width=10,
+            command=self.toggle_password_visibility
+        )
+        self.toggle_btn.pack(side="left")
+
+        self.label_rol = ctk.CTkLabel(self, text="Rol:")
+        self.label_rol.pack(pady=3)
+        self.combo_rol = ctk.CTkComboBox(self, values=["admin", "empleado"])
+        self.combo_rol.pack(pady=3)
+        self.combo_rol.set("empleado")  # Valor predeterminado
+
+        self.boton_guardar = ctk.CTkButton(self, text="Guardar", command=self.guardar_usuario)
+        self.boton_guardar.pack(pady=10)
+
+        self.grab_set()
+
+        # Aseguramos que se establezca el ícono con iconbitmap tras 175ms
+        self.after(175, lambda: self.iconbitmap(icono_logotipo))
+
+        # Instanciar UsuarioManager para manejar la creación de usuarios
+        self.usuario_manager = UsuarioManager()
+
+    def toggle_password_visibility(self):
+        self.password_visible = not self.password_visible
+        if self.password_visible:
+            self.entry_password.configure(show="")
+            self.toggle_btn.configure(text="🚫")
+        else:
+            self.entry_password.configure(show="*")
+            self.toggle_btn.configure(text="👁")
+
+    def guardar_usuario(self):
+        usuario = self.entry_nombre.get()
+        password = self.entry_password.get()
+        rol = self.combo_rol.get().strip().lower()
+
+        if len(password) < 5:
+            messagebox.showwarning("Atención", "Asegúrese que la contraseña no sea menor a cinco carácteres.", parent=self)
+            return
+
+        if not usuario or not password or not rol:
+            messagebox.showwarning("Atención", "Todos los campos son obligatorios.", parent=self)
+            return
+
+        if rol not in ("admin", "empleado"):
+            messagebox.showwarning("Rol inválido", "El rol debe ser 'admin' o 'empleado'.", parent=self)
+            return
+
+        # Llamamos al método de la clase para crear el usuario
+        exito = self.usuario_manager.crear_usuario(usuario, password, rol)
+        if exito:
+            messagebox.showinfo("Éxito", "Usuario agregado correctamente.", parent=self)
+            self.destroy()
+        else:
+            messagebox.showerror("Error", "No se pudo agregar el usuario.", parent=self)
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    app = FormAgregarUsuario(None)
+    app.mainloop()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\gui\login.py
+
+...-------------------...
+# src/gui/login.py
+import customtkinter as ctk
+import os
+from logica.gestor_usuarios import UsuarioManager  # Actualizado: se importa la clase
+from PIL import Image
+from customtkinter import CTkImage
+from CTkMessagebox import CTkMessagebox
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+SUB_DIR = os.path.join(BASE_DIR, "guimedia")
+icono_logotipo = os.path.join(SUB_DIR, "icono-win.ico")
+login_bg = os.path.join(SUB_DIR, "login-bg.png")
+login_contraseña = os.path.join(SUB_DIR, "login-contraseña.png")
+login_ingresesuscredenciales = os.path.join(SUB_DIR, "login-ingresesuscredenciales.png")
+login_usuario = os.path.join(SUB_DIR, "login-usuario.png")
+mainwin_bg = os.path.join(SUB_DIR, "mainwin-bg.png")
+boton_controlstock = os.path.join(SUB_DIR, "boton-control-de-stock.png")
+disabledboton_controlstock = os.path.join(SUB_DIR, "boton-control-de-stock-deshabilitado.png")
+boton_gestionventas = os.path.join(SUB_DIR, "boton-gestion-de-ventas.png")
+creditos_fondo = os.path.join(SUB_DIR, "creditos.png")
+
+class LoginWindow(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+        self.title("Login - Sistema de Ventas")
+        self.iconbitmap(icono_logotipo)
+        self.resizable(False, False)
+
+        # Definir dimensiones de la ventana
+        window_width = 345
+        window_height = 300
+
+        # Calcular la posición para centrar la ventana
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+
+        # Establecer la geometría centrada
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        self.bg_image = CTkImage(
+            Image.open(login_bg),  # Cambia esto por la ubicación real
+            size=(345, 300)
+        )
+
+        # Mostrar imagen de fondo
+        self.bg_label = ctk.CTkLabel(self, image=self.bg_image, text="")
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Imagen de fondo detrás del label "Ingrese sus credenciales"
+        self.bg_credenciales = CTkImage(
+            Image.open(login_ingresesuscredenciales),
+            size=(190, 28)
+        )
+        self.lbl_title = ctk.CTkLabel(
+            self, text="Ingrese sus credenciales", font=("Arial", 16, "bold"),
+            image=self.bg_credenciales
+        )
+        self.lbl_title.pack(pady=20)
+
+        # Imagen de fondo detrás del label "Usuario"
+        self.bg_usuario = CTkImage(
+            Image.open(login_usuario),
+            size=(46, 28)
+        )
+        self.lbl_usuario = ctk.CTkLabel(self, text="Usuario:", image=self.bg_usuario)
+        self.lbl_usuario.pack(pady=5)
+        self.entry_usuario = ctk.CTkEntry(self)
+        self.entry_usuario.pack(pady=5)
+
+        # Imagen de fondo detrás del label "Contraseña:"
+        self.bg_contra = CTkImage(
+            Image.open(login_contraseña),
+            size=(68, 28)
+        )
+        self.lbl_password = ctk.CTkLabel(self, text="Contraseña:", image=self.bg_contra)
+        self.lbl_password.pack(pady=5)
+
+        # Frame que contiene el Entry de contraseña y el botón de mostrar/ocultar
+        self.password_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.password_frame.pack(pady=5)
+
+        self.entry_password = ctk.CTkEntry(self.password_frame, show="*")
+        self.entry_password.pack(side="left", padx=(0, 5))
+
+        self.password_visible = False
+        self.toggle_btn = ctk.CTkButton(
+            self.password_frame, text="👁", width=10,
+            command=self.toggle_password_visibility
+        )
+        self.toggle_btn.pack(side="left")
+
+        # Botón para ingresar
+        self.btn_ingresar = ctk.CTkButton(self, text="Ingresar", command=self.login)
+        self.btn_ingresar.pack(pady=15)
+
+    def toggle_password_visibility(self):
+        self.password_visible = not self.password_visible
+        if self.password_visible:
+            self.entry_password.configure(show="")
+            self.toggle_btn.configure(text="🚫")
+        else:
+            self.entry_password.configure(show="*")
+            self.toggle_btn.configure(text="👁")
+
+    def login(self):
+        usuario = self.entry_usuario.get().strip()
+        password = self.entry_password.get().strip()
+        if not usuario or not password:
+            CTkMessagebox(title="Error", message="Ingrese usuario y contraseña", icon="cancel", fade_in_duration=1)
+            return
+
+        # Instanciar la clase UsuarioManager y validar el usuario
+        um = UsuarioManager()
+        user_info = um.validar_usuario(usuario, password)
+        if user_info is not None:
+            self.destroy()
+            # Abrir la ventana principal pasando la información del usuario
+            from gui.main_window import MainWindow
+            app = MainWindow(user_info)
+            app.mainloop()
+        else:
+            CTkMessagebox(title="Error", message="Credenciales incorrectas", icon="cancel", fade_in_duration=1)
+
+# Ejemplo para probar el login:
+if __name__ == "__main__":
+    app = LoginWindow()
+    app.mainloop()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\gui\main_window.py
+
+...-------------------...
+# src/gui/main_window.py
+import customtkinter as ctk
+from gui.login import icono_logotipo, mainwin_bg, boton_controlstock, disabledboton_controlstock, boton_gestionventas
+from utils.utilidades import Utilidades
+from PIL import Image
+from customtkinter import CTkImage
+
+class MainWindow(ctk.CTk):
+    def __init__(self, user_info):
+        super().__init__()
+        self.user_info = user_info  # Diccionario con los datos del usuario (ej.: {"usuario": "admin", "role": "admin"})
+        self.title("Sistema de Ventas")
+        self.resizable(False, False)
+        self.iconbitmap(icono_logotipo)
+
+        # Definir dimensiones de la ventana
+        window_width = 280
+        window_height = 330
+
+        # Calcular la posición para centrar la ventana
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        
+        # Establecer la geometría centrada
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        
+        # Establecer el ícono tras 100ms
+        self.after(100, lambda: self.iconbitmap(icono_logotipo))
+        
+        # --- FONDO: Imagen de fondo para la ventana ---
+        self.bg_image = CTkImage(
+            Image.open(mainwin_bg),  # Cambia esto por el path real
+            size=(280, 330)
+        )
+        self.bg_label = ctk.CTkLabel(self, image=self.bg_image, text="")
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        
+        # --- HEADER: Frame superior con el "botón" de usuario ---
+        self.header_frame = ctk.CTkFrame(self, height=50, fg_color="transparent")
+        self.header_frame.pack(side="top", anchor="w", pady=10, padx=10)
+        
+        self.user_button = ctk.CTkButton(
+            self.header_frame,
+            text=f"👤 {self.user_info['usuario'].title()}",
+            fg_color="#99945E",
+            command=self.toggle_user_menu
+        )
+        self.user_button.pack(side="left", padx=5, pady=5)
+        
+        # Menú desplegable del usuario
+        self.user_menu_frame = ctk.CTkFrame(self, width=150, fg_color="#3A5747")
+        
+        # Si el rol es admin, se muestran botones adicionales
+        if self.user_info["role"] == "admin":
+            self.btn_menu_agregar = ctk.CTkButton(
+                self.user_menu_frame,
+                text="(+) Agregar usuario",
+                command=self.agregar_usuario,
+                fg_color="#6B812E"
+            )
+            self.btn_menu_agregar.pack(fill="x", padx=5, pady=5)
+            
+            self.btn_menu_admin_usuarios = ctk.CTkButton(
+                self.user_menu_frame,
+                text="⚙️ Administrar usuarios",
+                command=self.abrir_admin_usuarios,
+                fg_color="#6B812E"
+            )
+            self.btn_menu_admin_usuarios.pack(fill="x", padx=5, pady=5)
+        
+        self.btn_menu_logout = ctk.CTkButton(
+            self.user_menu_frame,
+            text="Cerrar sesión",
+            command=self.cerrar_sesion,
+            width=5,
+            fg_color="#6B812E"
+        )
+        self.btn_menu_logout.pack(fill="x", padx=5, pady=5)
+        
+        self.user_menu_frame.place_forget()
+        
+        # --- MAIN AREA: Botones para acceder a otras funciones ---
+        self.main_frame = ctk.CTkFrame(self, fg_color="#273D27", corner_radius=15)
+        self.main_frame.place(x=44, y=70)
+        
+        self.header_frame.lift()
+        self.main_frame.lift()
+        
+        imagen_boton_controlstock = CTkImage(
+            light_image=Image.open(boton_controlstock),
+            dark_image=Image.open(boton_controlstock),
+            size=(163, 38)
+        )
+        imagen_disabledboton_controlstock = CTkImage(
+            light_image=Image.open(disabledboton_controlstock),
+            dark_image=Image.open(disabledboton_controlstock),
+            size=(163, 38)
+        )
+        
+        if self.user_info["role"] == "admin":
+            self.btn_stock = ctk.CTkButton(self.main_frame, fg_color="#273D27", image=imagen_boton_controlstock, text="", command=self.abrir_stock, corner_radius=0)
+        else:
+            self.btn_stock = ctk.CTkButton(self.main_frame, fg_color="#273D27", image=imagen_disabledboton_controlstock, text="", command=self.abrir_stock, state="disabled", corner_radius=0)
+        self.btn_stock.pack(pady=10, padx=10)
+        
+        imagen_boton_gestionventa = CTkImage(
+            light_image=Image.open(boton_gestionventas),
+            dark_image=Image.open(boton_gestionventas),
+            size=(163, 38)
+        )
+        self.btn_ventas = ctk.CTkButton(self.main_frame, fg_color="#273D27", image=imagen_boton_gestionventa, text="", command=self.abrir_ventas, corner_radius=0)
+        self.btn_ventas.pack(pady=10, padx=10)
+
+        # Nuevo botón para acceder a la gestión de clientes
+        self.btn_clientes = ctk.CTkButton(self.main_frame, text="Clientes", fg_color="#273D27", command=self.abrir_clientes, corner_radius=0)
+        self.btn_clientes.pack(pady=10, padx=10)
+        
+    def abrir_admin_usuarios(self):
+        from gui.admin_usuarios_window import AdminUsuariosWindow
+        AdminUsuariosWindow(self, self.user_info["usuario"])
+        
+    def toggle_user_menu(self):
+        if self.user_menu_frame.winfo_viewable():
+            self.user_menu_frame.place_forget()
+        else:
+            x = self.user_button.winfo_rootx() - self.winfo_rootx()
+            y = self.user_button.winfo_rooty() - self.winfo_rooty() + self.user_button.winfo_height()
+            self.user_menu_frame.place(x=x, y=y)
+            self.user_menu_frame.lift()
+        
+    def agregar_usuario(self):
+        from gui.form_agregar_usuario import FormAgregarUsuario
+        FormAgregarUsuario(self)
+        
+    def cerrar_sesion(self):
+        if Utilidades.confirmar_accion(self, "cerrar la sesión", tipo_usuario="usuario"):
+            self.destroy()
+            from gui.login import LoginWindow  # Para volver al login
+            login = LoginWindow()
+            login.mainloop()
+        
+    def abrir_stock(self):
+        self.withdraw()
+        from gui.stock_window import StockWindow
+        ventana_stock = StockWindow(self)
+        self.wait_window(ventana_stock)
+        self.deiconify()
+        
+    def abrir_ventas(self):
+        self.withdraw()
+        from gui.ventas_window import VentasWindow
+        ventana_ventas = VentasWindow(self)
+        self.wait_window(ventana_ventas)
+        self.deiconify()
+        
+    def abrir_clientes(self):
+        self.withdraw()
+        from gui.clientes_window import ClientesWindow
+        ventana_clientes = ClientesWindow(self)
+        self.wait_window(ventana_clientes)
+        self.deiconify()
+        
+# Ejemplo de uso:
+if __name__ == "__main__":
+    user_info = {"usuario": "admin", "role": "admin"}
+    app = MainWindow(user_info)
+    app.mainloop()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\gui\stock_window.py
+
+...-------------------...
+# src/gui/stock_window.py
+import customtkinter as ctk
+from gui.login import icono_logotipo
+from tkinter import ttk, messagebox
+from mysql.connector import Error
+from utils.utilidades import Utilidades
+
+# Importamos la clase refactorizada para la gestión de stock
+from logica.gestor_stock import StockManager
+
+class StockWindow(ctk.CTkToplevel):
+    """
+    Ventana secundaria para el control de stock de productos.
+    Permite buscar, agregar, modificar y eliminar productos.
+    Los datos se muestran en un Treeview y se utiliza un formulario para escribir o editar los datos.
+    """
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.title("Control de Stock")
+        self.resizable(False, False)
+
+        # Dimensiones de la ventana
+        window_width = 800
+        window_height = 600
+
+        # Calcular la posición para centrar la ventana
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        # Instanciar el gestor de stock (nuestra nueva clase que centraliza la lógica de productos)
+        self.stock_manager = StockManager()
+
+        # -------------------- Área de Búsqueda --------------------
+        self.search_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.search_frame.pack(padx=10, pady=5, expand=True)
+        self.search_frame_inside = ctk.CTkFrame(self.search_frame, fg_color="transparent")
+        self.search_frame_inside.pack(padx=5)
+        self.entry_search = ctk.CTkEntry(self.search_frame_inside, width=500, placeholder_text="Buscar producto...")
+        self.entry_search.pack(side="left", fill="x", expand=True, padx=(0, 50))
+        self.btn_search = ctk.CTkButton(self.search_frame_inside, text="Buscar", command=self.buscar_productos)
+        self.btn_search.pack(side="left")
+
+        # -------------------- Área del Treeview --------------------
+        frame_tabla = ctk.CTkFrame(self)
+        frame_tabla.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+        # Configurar el Treeview para mostrar productos
+        self.tree = ttk.Treeview(frame_tabla, columns=("ID", "Nombre", "Precio", "Stock"), show='headings')
+        self.tree.heading("ID", text="ID")
+        self.tree.heading("Nombre", text="Nombre")
+        self.tree.heading("Precio", text="Precio")
+        self.tree.heading("Stock", text="Stock")
+        self.tree.column("ID", width=50)
+        self.tree.column("Nombre", width=200)
+        self.tree.column("Precio", width=100)
+        self.tree.column("Stock", width=100)
+        self.tree.pack(side="left", padx=(10, 5), pady=10, expand=True, fill="both")
+        self.tree.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
+        scrollbar = ctk.CTkScrollbar(frame_tabla, orientation="vertical")
+        scrollbar.configure(command=self.tree.yview)
+        scrollbar.pack(side="right", fill="y")
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        
+        # -------------------- Formulario de Edición --------------------
+        self.frame_form = ctk.CTkFrame(self)
+        self.frame_form.pack(padx=100, expand=True)
+        # Campo nombre
+        ctk.CTkLabel(self.frame_form, text="Nombre:").grid(row=0, column=0, padx=10, pady=5)
+        self.entry_nombre = ctk.CTkEntry(self.frame_form, width=400)
+        self.entry_nombre.grid(row=0, column=1, padx=5, pady=5)
+        # Campo precio
+        ctk.CTkLabel(self.frame_form, text="Precio:").grid(row=1, column=0, padx=10, pady=5)
+        self.entry_precio = ctk.CTkEntry(self.frame_form, width=400)
+        self.entry_precio.grid(row=1, column=1, padx=5, pady=5)
+        # Campo stock
+        ctk.CTkLabel(self.frame_form, text="Stock:").grid(row=2, column=0, padx=10, pady=5)
+        self.frame_stock = ctk.CTkFrame(self.frame_form)
+        self.frame_stock.grid(row=2, column=1, padx=5, pady=5)
+        self.btn_decrementar = ctk.CTkButton(self.frame_stock, text="-", width=30, command=self.decrementar_stock)
+        self.btn_decrementar.pack(side="left")
+        self.entry_stock = ctk.CTkEntry(self.frame_stock, width=250)
+        self.entry_stock.pack(side="left")
+        self.btn_incrementar = ctk.CTkButton(self.frame_stock, text="+", width=30, command=self.incrementar_stock)
+        self.btn_incrementar.pack(side="left")
+
+        # -------------------- Botones de Acción --------------------
+        self.frame_btns = ctk.CTkFrame(self.frame_form, fg_color="#2E2E2E")
+        self.frame_btns.grid(row=4, column=0, columnspan=2, pady=10)
+        self.btn_agregar = ctk.CTkButton(self.frame_btns, text="Agregar Producto", command=self.agregar)
+        self.btn_agregar.grid(row=0, column=0, columnspan=2, padx=5, pady=5)
+        self.btn_modificar = ctk.CTkButton(self.frame_btns, text="Modificar Producto", command=self.modificar)
+        self.btn_modificar.grid(row=1, column=0, padx=5, pady=5)
+        self.btn_eliminar = ctk.CTkButton(self.frame_btns, text="Eliminar Producto", command=self.eliminar)
+        self.btn_eliminar.grid(row=1, column=1, padx=5, pady=5)
+
+        # Botón para cerrar la ventana
+        self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy)
+        self.btn_volver.pack(padx=5, pady=(0, 8))
+        
+        # Cargar los productos en el Treeview
+        self.cargar_productos()
+
+        # Establece el ícono tras 150ms
+        self.after(150, lambda: self.iconbitmap(icono_logotipo))
+
+    def buscar_productos(self):
+        """
+        Utiliza el término ingresado en el entry para buscar productos en la base de datos.
+        Se filtra la lista de productos obtenida del StockManager.
+        """
+        termino = self.entry_search.get().strip()
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        try:
+            # Si StockManager no tiene 'buscar_productos', se filtran los productos aquí:
+            productos = [
+                producto for producto in self.stock_manager.obtener_productos()
+                if termino.lower() in producto["nombre"].lower()
+            ]
+            for producto in productos:
+                self.tree.insert("", "end", values=(
+                    producto["prodId"], producto["nombre"], producto["precio"], producto["stock"]
+                ))
+        except Exception as e:
+            print("Error al buscar productos:", e)
+
+    
+    def cargar_productos(self):
+        """
+        Recupera todos los productos utilizando el método 'obtener_productos' del StockManager
+        y los muestra en el Treeview.
+        """
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        productos = self.stock_manager.obtener_productos()
+        for producto in productos:
+            self.tree.insert("", "end", values=(
+                producto["prodId"], producto["nombre"], producto["precio"], producto["stock"]
+            ))
+            
+    def agregar(self):
+        """
+        Captura los datos del formulario (nombre, precio y stock), los convierte a los tipos correctos
+        y llama al método 'agregar_o_actualizar_producto' del StockManager.
+        Si la acción es confirmada, se recarga el Treeview.
+        """
+        try:
+            producto = {
+                "nombre": self.entry_nombre.get().strip(),
+                "precio": float(self.entry_precio.get()),
+                "stock": int(self.entry_stock.get())
+            }
+        except ValueError:
+            messagebox.showerror("Error", "Precio y Stock deben ser numéricos.", parent=self)
+            return
+        if Utilidades.confirmar_accion(self, "agregar este producto", tipo_usuario="administrador"):
+            if self.stock_manager.agregar_o_actualizar_producto(producto):
+                messagebox.showinfo("Éxito", "Producto agregado/actualizado exitosamente!", parent=self)
+                self.cargar_productos()
+            else:
+                messagebox.showerror("Error", "No se pudo agregar/actualizar el producto.", parent=self)
+    
+    def modificar(self):
+        """
+        Valida que el producto seleccionado en el Treeview sea modificado
+        con los nuevos datos ingresados en el formulario. Se llama al método
+        'modificar_producto' del StockManager para actualizar la base de datos.
+        """
+        selected_item = self.tree.focus()
+        if not selected_item:
+            messagebox.showerror("Error", "Seleccione un producto para modificar.", parent=self)
+            return
+        values = self.tree.item(selected_item, "values")
+        id_producto = values[0]
+        try:
+            producto_actualizado = {
+                "nombre": self.entry_nombre.get().strip(),
+                "precio": float(self.entry_precio.get()),
+                "stock": int(self.entry_stock.get())
+            }
+        except ValueError:
+            messagebox.showerror("Error", "Precio y Stock deben ser numéricos.", parent=self)
+            return
+        if Utilidades.confirmar_accion(self, "modificar este producto", tipo_usuario="administrador"):
+            if self.stock_manager.modificar_producto(self, id_producto, producto_actualizado):
+                messagebox.showinfo("Éxito", "Producto modificado exitosamente!", parent=self)
+                self.cargar_productos()
+            else:
+                messagebox.showerror("Error", "Error al modificar producto.", parent=self)
+        
+    def eliminar(self):
+        """
+        Permite eliminar el producto seleccionado en el Treeview.
+        Se confirma la acción y, en caso afirmativo, se llama al método 'eliminar_producto'
+        del StockManager. Luego se recarga la lista de productos.
+        """
+        selected_item = self.tree.focus()
+        if not selected_item:
+            messagebox.showerror("Error", "Seleccione un producto para eliminar.", parent=self)
+            return
+        values = self.tree.item(selected_item, "values")
+        id_producto = values[0]
+        if Utilidades.confirmar_accion(self, "eliminar este producto", tipo_usuario="administrador"):
+            if self.stock_manager.eliminar_producto(id_producto):
+                messagebox.showinfo("Éxito", "Producto eliminado exitosamente!", parent=self)
+                self.cargar_productos()
+            else:
+                messagebox.showerror("Error", "Error al eliminar producto.", parent=self)
+    
+    def cargar_datos_seleccionados(self, event):
+        """
+        Al seleccionar un producto en el Treeview, carga sus datos en los campos del formulario
+        para permitir su edición.
+        """
+        selected_item = self.tree.focus()
+        if selected_item:
+            values = self.tree.item(selected_item, "values")
+            self.entry_nombre.delete(0, "end")
+            self.entry_nombre.insert(0, values[1])
+            self.entry_precio.delete(0, "end")
+            self.entry_precio.insert(0, values[2])
+            self.entry_stock.delete(0, "end")
+            self.entry_stock.insert(0, values[3])
+    
+    def incrementar_stock(self):
+        """
+        Incrementa en 1 el valor actual del campo "Stock". Si el valor ingresado no es numérico,
+        se asume que es 0.
+        """
+        try:
+            current_stock = int(self.entry_stock.get())
+        except ValueError:
+            current_stock = 0
+        new_stock = current_stock + 1
+        self.entry_stock.delete(0, "end")
+        self.entry_stock.insert(0, new_stock)
+
+    def decrementar_stock(self):
+        """
+        Decrementa en 1 el valor actual del campo "Stock", asegurándose de que no sea menor a 0.
+        """
+        try:
+            current_stock = int(self.entry_stock.get())
+        except ValueError:
+            current_stock = 0
+        new_stock = current_stock - 1 if current_stock > 0 else 0
+        self.entry_stock.delete(0, "end")
+        self.entry_stock.insert(0, new_stock)
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    # Se simula un usuario logueado, por ejemplo:
+    app = StockWindow()
+    app.mainloop()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\gui\ventas_window.py
+
+...-------------------...
+# src/gui/ventas_window.py
+import customtkinter as ctk
+import tkinter as tk
+from gui.login import icono_logotipo
+from tkinter import ttk, messagebox
+from datetime import datetime
+
+# Importar las clases refactorizadas en lugar de funciones libres
+from logica.gestor_stock import StockManager
+from logica.gestor_ventas import VentaManager
+from logica.generar_factura import FacturaGenerator
+from utils.utilidades import Utilidades
+from mysql.connector import Error
+
+class VentasWindow(ctk.CTkToplevel):
+    def __init__(self, master=None):
+        super().__init__(master)
+        self.title("Gestión de Ventas - Carrito")
+        self.resizable(False, False)
+
+        # Dimensiones de la ventana
+        window_width = 1300
+        window_height = 525
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        # Carrito: lista interna para almacenar productos seleccionados
+        self.carrito = []
+        self.selected_product = None
+
+        # Variables para manejo de cantidades en el ingreso y en el carrito
+        self.quantity_var = ctk.StringVar(value="1")
+        self.cart_quantity_var = ctk.StringVar(value="")
+
+        # Instanciar los gestores refactorizados:
+        self.stock_manager = StockManager()
+        self.venta_manager = VentaManager()
+        self.factura_generator = FacturaGenerator()
+
+        # --- CONTENEDOR PRINCIPAL ---
+        self.frame_principal = ctk.CTkFrame(self)
+        self.frame_principal.pack(padx=10, pady=10, fill="both", expand=True)
+        self.frame_principal.grid_columnconfigure(0, weight=1)
+        self.frame_principal.grid_columnconfigure(1, weight=1)
+
+        # ------ IZQUIERDA: Productos Disponibles ------
+        self.frame_disponibles = ctk.CTkFrame(self.frame_principal, fg_color="#408E57")
+        self.frame_disponibles.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
+        self.frame_disponibles.grid_rowconfigure(1, weight=1)
+        ctk.CTkLabel(self.frame_disponibles, text="Productos Disponibles", font=("Arial", 16)).pack(padx=5, pady=5)
+
+        # --- Área de búsqueda ---
+        self.search_frame = ctk.CTkFrame(self.frame_disponibles, fg_color="transparent")
+        self.search_frame.pack(padx=10, pady=5, expand=True)
+        self.search_frame_inside = ctk.CTkFrame(self.search_frame, fg_color="transparent")
+        self.search_frame_inside.pack(padx=5)
+        self.entry_search = ctk.CTkEntry(self.search_frame_inside, width=500, placeholder_text="Buscar producto...")
+        self.entry_search.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.btn_search = ctk.CTkButton(self.search_frame_inside, text="Buscar", command=self.buscar_productos)
+        self.btn_search.pack()
+
+        # Frame contenedor para Treeview de productos y scrollbar
+        self.tree_productos_frame = ctk.CTkFrame(self.frame_disponibles)
+        self.tree_productos_frame.pack(padx=5, pady=5, fill="both", expand=True)
+        self.tree_productos = ttk.Treeview(
+            self.tree_productos_frame,
+            columns=("ID", "Producto", "Precio Unit.", "Stock"),
+            show="headings"
+        )
+        self.tree_productos.heading("ID", text="ID")
+        self.tree_productos.heading("Producto", text="Producto")
+        self.tree_productos.heading("Precio Unit.", text="Precio Unit.")
+        self.tree_productos.heading("Stock", text="Stock")
+        self.tree_productos.column("ID", width=50, anchor="center")
+        self.tree_productos.column("Producto", width=200, anchor="w")
+        self.tree_productos.column("Precio Unit.", width=100, anchor="center")
+        self.tree_productos.column("Stock", width=100, anchor="center")
+        self.tree_productos.grid(row=0, column=0, sticky="nsew")
+        self.scrollbar_productos = ctk.CTkScrollbar(
+            self.tree_productos_frame, orientation="vertical",
+            command=self.tree_productos.yview
+        )
+        self.scrollbar_productos.grid(row=0, column=1, sticky="ns")
+        self.tree_productos.configure(yscrollcommand=self.scrollbar_productos.set)
+        self.tree_productos_frame.columnconfigure(0, weight=1)
+        self.tree_productos_frame.rowconfigure(0, weight=1)
+        self.tree_productos.bind("<<TreeviewSelect>>", self.on_product_selected)
+
+        self.btn_refresh = ctk.CTkButton(
+            self.frame_disponibles,
+            text="Refrescar Lista",
+            command=self.cargar_productos_disp
+        )
+        self.btn_refresh.pack(padx=5, pady=5)
+
+        # Panel para ajuste de cantidad (para agregar producto al carrito)
+        self.frame_cantidad = ctk.CTkFrame(self.frame_disponibles)
+        self.frame_cantidad.pack(padx=5, pady=5)
+        self.btn_minus = ctk.CTkButton(self.frame_cantidad, text="-", command=self.decrementar, width=30)
+        self.btn_minus.grid(row=0, column=0, padx=5, pady=5)
+        self.entry_cantidad = ctk.CTkEntry(self.frame_cantidad, textvariable=self.quantity_var, width=60)
+        self.entry_cantidad.grid(row=0, column=1, padx=5, pady=5)
+        self.btn_plus = ctk.CTkButton(self.frame_cantidad, text="+", command=self.incrementar, width=30)
+        self.btn_plus.grid(row=0, column=2, padx=5, pady=5)
+        self.btn_minus.configure(state="disabled")
+        self.btn_plus.configure(state="disabled")
+        self.entry_cantidad.configure(state="disabled")
+        
+        self.btn_agregar_producto = ctk.CTkButton(
+            self.frame_disponibles,
+            text="Agregar al Carrito",
+            command=self.agregar_al_carrito,
+            state="disabled"
+        )
+        self.btn_agregar_producto.pack(padx=5, pady=5)
+
+        # ------ DERECHA: Carrito de Ventas ------
+        self.frame_carrito = ctk.CTkFrame(self.frame_principal, fg_color="#245332")
+        self.frame_carrito.grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
+        self.frame_carrito.grid_rowconfigure(1, weight=1)
+        ctk.CTkLabel(self.frame_carrito, text="Carrito de Ventas", font=("Arial", 16)).pack(padx=5, pady=5)
+
+        # Frame para el Treeview del carrito y scrollbar
+        self.tree_carrito_frame = ctk.CTkFrame(self.frame_carrito)
+        self.tree_carrito_frame.pack(padx=5, pady=5, fill="both", expand=True)
+        self.tree_carrito = ttk.Treeview(
+            self.tree_carrito_frame,
+            columns=("ID", "Producto", "Precio Unit.", "Cantidad", "Subtotal"),
+            show="headings"
+        )
+        self.tree_carrito.heading("ID", text="ID")
+        self.tree_carrito.heading("Producto", text="Producto")
+        self.tree_carrito.heading("Precio Unit.", text="Precio Unit.")
+        self.tree_carrito.heading("Cantidad", text="Cantidad")
+        self.tree_carrito.heading("Subtotal", text="Subtotal")
+        self.tree_carrito.column("ID", width=50, anchor="center")
+        self.tree_carrito.column("Producto", width=200, anchor="w")
+        self.tree_carrito.column("Precio Unit.", width=100, anchor="center")
+        self.tree_carrito.column("Cantidad", width=100, anchor="center")
+        self.tree_carrito.column("Subtotal", width=100, anchor="center")
+        self.tree_carrito.grid(row=0, column=0, sticky="nsew")
+        self.scrollbar_carrito = ctk.CTkScrollbar(
+            self.tree_carrito_frame, orientation="vertical",
+            command=self.tree_carrito.yview
+        )
+        self.scrollbar_carrito.grid(row=0, column=1, sticky="ns")
+        self.tree_carrito.configure(yscrollcommand=self.scrollbar_carrito.set)
+        self.tree_carrito_frame.columnconfigure(0, weight=1)
+        self.tree_carrito_frame.rowconfigure(0, weight=1)
+        self.tree_carrito.bind("<<TreeviewSelect>>", self.on_cart_item_selected)
+        
+        self.lbl_total = ctk.CTkLabel(self.frame_carrito, text="Total: $0.00", font=("Arial", 14))
+        self.lbl_total.pack(padx=5, pady=5)
+
+        # Panel de descuento
+        self.frame_descuento = ctk.CTkFrame(self.frame_carrito)
+        self.frame_descuento.pack(padx=5, pady=5)
+        ctk.CTkLabel(self.frame_descuento, text="Descuento (%):").grid(row=0, column=0, padx=5, pady=5)
+        self.descuento_var = ctk.StringVar(value="0")
+        self.entry_descuento = ctk.CTkEntry(self.frame_descuento, textvariable=self.descuento_var, width=60)
+        self.entry_descuento.grid(row=0, column=1, padx=5, pady=5)
+        self.btn_aplicar_descuento = ctk.CTkButton(
+            self.frame_descuento, text="Aplicar Descuento", command=self.actualizar_tree_carrito
+        )
+        self.btn_aplicar_descuento.grid(row=0, column=2, padx=5, pady=5)
+
+        self.btn_confirmar = ctk.CTkButton(self.frame_carrito, text="Confirmar Venta", command=self.confirmar)
+        self.btn_confirmar.pack(padx=5, pady=5)
+        
+        # Controles para modificar la cantidad en el carrito
+        self.frame_cart_controls = ctk.CTkFrame(self.frame_carrito)
+        self.frame_cart_controls.pack(padx=5, pady=5, fill="x")
+        ctk.CTkLabel(self.frame_cart_controls, text="Modificar Cantidad:").grid(row=0, column=0, padx=5, pady=5)
+        self.btn_cart_minus = ctk.CTkButton(self.frame_cart_controls, text="-", command=self.decrementar_cart, width=30)
+        self.btn_cart_minus.grid(row=0, column=1, padx=5, pady=5)
+        self.entry_cart_quantity = ctk.CTkEntry(self.frame_cart_controls, textvariable=self.cart_quantity_var, width=60)
+        self.entry_cart_quantity.grid(row=0, column=2, padx=5, pady=5)
+        self.btn_cart_plus = ctk.CTkButton(self.frame_cart_controls, text="+", command=self.incrementar_cart, width=30)
+        self.btn_cart_plus.grid(row=0, column=3, padx=5, pady=5)
+        self.btn_actualizar_cart = ctk.CTkButton(self.frame_cart_controls, text="Actualizar", command=self.actualizar_cart_item)
+        self.btn_actualizar_cart.grid(row=0, column=4, padx=5, pady=5)
+        self.btn_eliminar_cart = ctk.CTkButton(self.frame_cart_controls, text="Eliminar del Carrito", command=self.eliminar_cart_item)
+        self.btn_eliminar_cart.grid(row=0, column=5, padx=5, pady=5)
+        
+        # Deshabilitar controles del carrito hasta que se seleccione un item
+        self.desactivar_controles_cart()
+
+        self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy)
+        self.btn_volver.pack(padx=5, pady=5)
+
+        # Carga inicial de productos disponibles
+        self.cargar_productos_disp()
+
+        self.grab_set()
+
+        # Establecer ícono de la ventana tras 100 ms
+        self.after(100, lambda: self.iconbitmap(icono_logotipo))
+    
+    def buscar_productos(self):
+        """
+        Filtra los productos según el término ingresado en el Entry.
+        Se utiliza el método 'buscar_productos' del StockManager para obtener coincidencias.
+        """
+        termino = self.entry_search.get().strip()
+        for i in self.tree_productos.get_children():
+            self.tree_productos.delete(i)
+        try:
+            # Llamada a la función refactorizada
+            productos = self.buscar_productos(termino)
+            for producto in productos:
+                self.tree_productos.insert("", "end", values=(
+                    producto["prodId"], producto["nombre"], producto["precio"], producto["stock"]
+                ))
+        except Error as e:
+            print("Error al buscar productos:", e)
+
+    def desactivar_controles_cart(self):
+        self.btn_cart_minus.configure(state="disabled")
+        self.btn_cart_plus.configure(state="disabled")
+        self.entry_cart_quantity.configure(state="disabled")
+        self.btn_actualizar_cart.configure(state="disabled")
+        self.btn_eliminar_cart.configure(state="disabled")
+        self.cart_quantity_var.set("")
+    
+    def cargar_productos_disp(self):
+        for item in self.tree_productos.get_children():
+            self.tree_productos.delete(item)
+        # Obtenemos productos usando StockManager
+        productos = self.stock_manager.obtener_productos()
+        for prod in productos:
+            self.tree_productos.insert("", "end", values=(
+                prod["prodId"], prod["nombre"], prod["precio"], prod["stock"]
+            ))
+    
+    def on_product_selected(self, event):
+        seleccion = self.tree_productos.focus()
+        if not seleccion:
+            return
+        valores = self.tree_productos.item(seleccion, "values")
+        self.selected_product = {
+            "prodId": valores[0],
+            "nombre": valores[1],
+            "precio": float(valores[2]),
+            "stock": int(valores[3])
+        }
+        self.quantity_var.set("1")
+        self.btn_minus.configure(state="normal")
+        self.btn_plus.configure(state="normal")
+        self.entry_cantidad.configure(state="normal")
+        self.btn_agregar_producto.configure(state="normal")
+    
+    def decrementar(self):
+        try:
+            current = int(self.quantity_var.get())
+        except ValueError:
+            current = 1
+        if current > 1:
+            self.quantity_var.set(str(current - 1))
+    
+    def incrementar(self):
+        try:
+            current = int(self.quantity_var.get())
+        except ValueError:
+            current = 1
+        if self.selected_product and current < self.selected_product["stock"]:
+            self.quantity_var.set(str(current + 1))
+    
+    def agregar_al_carrito(self):
+        if self.selected_product is None:
+            messagebox.showerror("Error", "No se ha seleccionado ningún producto.")
+            return
+        try:
+            cantidad = int(self.quantity_var.get())
+        except ValueError:
+            messagebox.showerror("Error", "La cantidad debe ser un número entero.")
+            return
+        if cantidad < 1:
+            messagebox.showerror("Error", "La cantidad debe ser al menos 1.")
+            return
+        if cantidad > self.selected_product["stock"]:
+            messagebox.showerror("Error", f"Cantidad excede el stock disponible ({self.selected_product['stock']}).")
+            return
+        # Buscar si el producto ya está en el carrito
+        existente = next((item for item in self.carrito if item["prodId"] == self.selected_product["prodId"]), None)
+        if existente:
+            if existente["cantidad"] + cantidad > self.selected_product["stock"]:
+                messagebox.showerror("Error", f"No se puede agregar esa cantidad, excede el stock ({self.selected_product['stock']}).")
+                return
+            existente["cantidad"] += cantidad
+        else:
+            self.carrito.append({
+                "prodId": self.selected_product["prodId"],
+                "nombre": self.selected_product["nombre"],
+                "precio": self.selected_product["precio"],
+                "cantidad": cantidad
+            })
+        self.actualizar_tree_carrito()
+    
+    def actualizar_tree_carrito(self):
+        for item in self.tree_carrito.get_children():
+            self.tree_carrito.delete(item)
+        total_carrito = 0.0
+        for item in self.carrito:
+            total_item = item["precio"] * item["cantidad"]
+            self.tree_carrito.insert("", "end", values=(
+                item["prodId"], item["nombre"], item["precio"], item["cantidad"], total_item
+            ))
+            total_carrito += total_item
+        try:
+            self.descuento = float(self.descuento_var.get())
+            if self.descuento < 0:
+                self.descuento = 0
+            elif self.descuento > 100:
+                self.descuento = 100
+        except ValueError:
+            self.descuento = 0
+        self.total_con_descuento = total_carrito * (1 - self.descuento / 100)
+        self.lbl_total.configure(text=f"Total: ${self.total_con_descuento:.2f} (Descuento: {self.descuento:.0f}%)")
+        self.desactivar_controles_cart()
+    
+    def on_cart_item_selected(self, event):
+        seleccion = self.tree_carrito.focus()
+        if not seleccion:
+            self.desactivar_controles_cart()
+            return
+        valores = self.tree_carrito.item(seleccion, "values")
+        self.cart_quantity_var.set(str(valores[3]))
+        self.btn_cart_minus.configure(state="normal")
+        self.btn_cart_plus.configure(state="normal")
+        self.entry_cart_quantity.configure(state="normal")
+        self.btn_actualizar_cart.configure(state="normal")
+        self.btn_eliminar_cart.configure(state="normal")
+    
+    def decrementar_cart(self):
+        try:
+            current = int(self.cart_quantity_var.get())
+        except ValueError:
+            current = 0
+        if current > 1:
+            self.cart_quantity_var.set(str(current - 1))
+        else:
+            self.cart_quantity_var.set("0")
+    
+    def incrementar_cart(self):
+        try:
+            current = int(self.cart_quantity_var.get())
+        except ValueError:
+            current = 1
+        # Se utiliza StockManager para obtener productos
+        prod = next((p for p in self.stock_manager.obtener_productos() if p["prodId"] == self.selected_product["prodId"]), None)
+        max_stock = self.selected_product["stock"] if self.selected_product else current
+        if current < max_stock:
+            self.cart_quantity_var.set(str(current + 1))
+    
+    def actualizar_cart_item(self):
+        seleccion = self.tree_carrito.focus()
+        if not seleccion:
+            messagebox.showerror("Error", "Seleccione un item del carrito para actualizar.")
+            return
+        try:
+            nueva_cantidad = int(self.cart_quantity_var.get())
+        except ValueError:
+            messagebox.showerror("Error", "La cantidad debe ser un número entero.")
+            return
+        for item in self.carrito:
+            if str(item["prodId"]) == str(self.tree_carrito.item(seleccion, "values")[0]):
+                prod_disponible = next((p for p in self.stock_manager.obtener_productos() if str(p["prodId"]) == str(item["prodId"])), None)
+                if prod_disponible and nueva_cantidad > prod_disponible["stock"]:
+                    messagebox.showerror("Error", f"La cantidad no puede superar el stock disponible ({prod_disponible['stock']}).")
+                    return
+                if nueva_cantidad < 1:
+                    self.carrito = [it for it in self.carrito if str(it["prodId"]) != str(item["prodId"])]
+                else:
+                    item["cantidad"] = nueva_cantidad
+                break
+        self.actualizar_tree_carrito()
+    
+    def eliminar_cart_item(self):
+        seleccion = self.tree_carrito.focus()
+        if not seleccion:
+            messagebox.showerror("Error", "Seleccione un item del carrito para eliminar.")
+            return
+        item_id = self.tree_carrito.item(seleccion, "values")[0]
+        self.carrito = [item for item in self.carrito if str(item["prodId"]) != str(item_id)]
+        self.actualizar_tree_carrito()
+    
+    def confirmar(self):
+        """
+        Confirma la venta del carrito actual.
+        Llama al método 'confirmar_venta' del VentaManager y, si la venta es exitosa, genera la factura.
+        """
+        if not self.carrito:
+            messagebox.showerror("Error", "El carrito está vacío.")
+            return
+        # Llama al método 'confirmar_venta' de VentaManager
+        exito, mensaje = self.venta_manager.confirmar_venta(self.carrito)
+        if Utilidades.confirmar_accion(self, "efectuar esta venta", tipo_usuario="usuario"):
+            if exito:
+                messagebox.showinfo("Éxito", mensaje, parent=self)
+                self.actualizar_tree_carrito()
+                self.cargar_productos_disp()
+                self.cargar_venta()
+            else:
+                messagebox.showerror("Error", mensaje, parent=self)
+    
+    def cargar_venta(self):
+        """
+        Guarda la venta en la base de datos y genera la factura.
+        Se delega toda la lógica a FacturaGenerator.
+        """
+        try:
+            self.factura_generator.generar_factura(self)
+            messagebox.showinfo("Venta cargada", "¡Enhorabuena! La venta se ha cargado en la base de datos.", parent=self)
+        except Error as e:
+            messagebox.showerror("Error al cargar la venta en la base de datos:", e, parent=self)
+    
+    # Fin de las funciones relacionadas con el carrito y venta.
+
+if __name__ == "__main__":
+    app = VentasWindow()
+    app.mainloop()
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\logica\generar_factura.py
+
+...-------------------...
+# src/login/generar_factura.py
+import os
+from datetime import datetime
+from datos.conexion_bd import ConexionBD
+from docxtpl import DocxTemplate
+from mysql.connector import Error
+from docx2pdf import convert
+from tkinter.filedialog import asksaveasfilename
+from tkinter import messagebox
+from docx.shared import Pt
+
+class FacturaGenerator:
+    """
+    Encapsula la generación de la factura:
+      - Recupera los datos de la última factura y sus detalles.
+      - Inserta dinámicamente una tabla en la plantilla (en el lugar del marcador).
+      - Renderiza el documento DOCX y lo convierte a PDF.
+    """
+    def __init__(self):
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+        # Ubicación de la plantilla
+        self.plantilla_document = os.path.join(BASE_DIR, "plantilla_factura.docx")
+
+    def obtener_factura_y_detalles(self):
+        """
+        Recupera la última factura ingresada en la base de datos y sus detalles.
+        Retorna una tupla (datos_factura, detalles) donde:
+          - datos_factura es un diccionario con: facturaId, fechaEmision, horaEmision, total_neto, total_bruto, descuento.
+          - detalles es una lista de diccionarios donde cada elemento contiene: prodId, nombre, cantidad, precioUnitario y subtotal.
+        """
+        datos_factura = None
+        detalles = []
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            cursor = conexion.cursor(dictionary=True)
+            if conexion:
+                cursor.execute("USE ventas_db")
+                cursor.execute("""
+                    SELECT facturaId AS facturaId,
+                           fechaEmision,
+                           horaEmision,
+                           total_neto,
+                           total_bruto,
+                           descuento
+                    FROM facturas
+                    ORDER BY facturaId DESC
+                    LIMIT 1
+                """)
+                datos_factura = cursor.fetchone()
+                if datos_factura:
+                    factura_id = datos_factura["facturaId"]
+                    cursor.execute("""
+                        SELECT fd.prodId,
+                               p.nombre,
+                               fd.cantidad,
+                               fd.precioUnitario
+                        FROM factura_detalles fd
+                        JOIN productos p ON fd.prodId = p.prodId
+                        WHERE fd.facturaID = %s
+                    """, (factura_id,))
+                    detalles = cursor.fetchall()
+                    for detalle in detalles:
+                        detalle["subtotal"] = detalle["cantidad"] * detalle["precioUnitario"]
+        except Error as e:
+            print("Error al obtener la factura:", e)
+        finally:
+            if conexion.is_connected():
+                cursor.close()
+                conexion.close()
+        return datos_factura, detalles
+
+    def insert_table_in_doc(self, doc, detalles):
+        """
+        Recorre las tablas del documento buscando el marcador "%%tabla_placeholder%%". Cuando lo encuentra,
+        borra el párrafo que lo contiene e inserta una tabla anidada formateada con 4 columnas:
+           Cantidad, Producto, Precio Unitario y Sub-total.
+        Se establece:
+          - Encabezados en fuente HelveticaNeueLT Pro 35 Th, 10 pt, en negrita.
+          - Datos en la misma fuente, 10 pt, sin negrita.
+        """
+        # Itera sobre cada tabla del documento
+        for tabla in doc.tables:
+            for row in tabla.rows:
+                for cell in row.cells:
+                    for para in cell.paragraphs:
+                        if "%%tabla_placeholder%%" in para.text:
+                            # Remover el párrafo que contiene el marcador
+                            p_elem = para._element
+                            cell._tc.remove(p_elem)
+                            
+                            # Agregar una tabla anidada en la celda
+                            nested_table = cell.add_table(rows=1, cols=4)
+                            nested_table.style = 'Table Grid'
+                            hdr_cells = nested_table.rows[0].cells
+                            hdr_cells[0].text = "Cantidad"
+                            hdr_cells[1].text = "Producto"
+                            hdr_cells[2].text = "Precio Unitario"
+                            hdr_cells[3].text = "Sub-total"
+                            
+                            # Formatea los encabezados: 10 pt, en negrita.
+                            for cell_hdr in nested_table.rows[0].cells:
+                                for para_hdr in cell_hdr.paragraphs:
+                                    for run in para_hdr.runs:
+                                        run.font.name = 'HelveticaNeueLT Pro 35 Th'
+                                        run.font.size = Pt(10)
+                                        run.font.bold = True
+                            
+                            # Agrega una fila por cada producto en 'detalles'
+                            for item in detalles:
+                                row_cells = nested_table.add_row().cells
+                                row_cells[0].text = str(item["cantidad"])
+                                row_cells[1].text = item["nombre"]
+                                row_cells[2].text = f"{item['precioUnitario']:.2f}"
+                                row_cells[3].text = f"{item['subtotal']:.2f}"
+                            
+                            # Formatea los datos: 10 pt, sin negrita.
+                            for row_idx in range(1, len(nested_table.rows)):
+                                for cell_data in nested_table.rows[row_idx].cells:
+                                    for para_data in cell_data.paragraphs:
+                                        for run in para_data.runs:
+                                            run.font.name = 'HelveticaNeueLT Pro 35 Th'
+                                            run.font.size = Pt(10)
+                                            run.font.bold = False
+                            return  # Una vez reemplazado, se sale del método
+
+    def generar_factura(self, parent):
+        """
+        Genera la factura en formato DOCX a partir de la plantilla, inserta la tabla
+        de detalles en el marcador y la convierte a PDF. Si no se obtiene la factura
+        de la base de datos, muestra un error.
+        """
+        datos_factura, detalles = self.obtener_factura_y_detalles()
+        if not datos_factura:
+            messagebox.showerror("Error de Generación", "No se pudo generar la factura.", parent=parent)
+            return
+        try:
+            context = {
+                "facturaId": datos_factura["facturaId"],
+                "fecha": datos_factura["fechaEmision"],
+                "hora": datos_factura["horaEmision"],
+                "descuento": f"{int(datos_factura['descuento'])}%",
+                "total_neto": datos_factura["total_neto"],
+                "total_bruto": datos_factura["total_bruto"],
+                "tabla_placeholder": "%%tabla_placeholder%%"
+            }
+            
+            doc = DocxTemplate(self.plantilla_document)
+            doc.render(context)
+            
+            # Se inserta la tabla en el documento, reemplazando el marcador.
+            self.insert_table_in_doc(doc, detalles)
+            
+            ubicacion_docx = asksaveasfilename(
+                defaultextension=".docx",
+                filetypes=[("Word files", "*.docx")],
+                title="Guarde la factura"
+            )
+            if ubicacion_docx:
+                doc.save(ubicacion_docx)
+                ubicacion_pdf = os.path.splitext(ubicacion_docx)[0] + ".pdf"
+                convert(ubicacion_docx, ubicacion_pdf)
+                os.remove(ubicacion_docx)
+                messagebox.showinfo("Éxito", f"Factura guardada en {ubicacion_pdf}", parent=parent)
+            else:
+                messagebox.showwarning("Cancelación", "La operación de guardado fue cancelada.", parent=parent)
+        except Error as e:
+            print("Error durante la generación de la factura:", e)
+        except Exception as ex:
+            print("Error:", ex)
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    # Para pruebas unitarias, se puede simular una llamada sin UI:
+    fg = FacturaGenerator()
+    # Aquí 'parent' se podría reemplazar por None o por un contenedor simulado
+    fg.generar_factura(parent=None)
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\logica\gestor_clientes.py
+
+...-------------------...
+# src/logica/gestor_clientes.py
+from datos.conexion_bd import ConexionBD
+from mysql.connector import Error
+import tkinter.messagebox as messagebox
+
+class ClienteManager:
+    """
+    Clase para gestionar operaciones CRUD sobre clientes en la base de datos.
+
+    Provee métodos para crear, obtener, actualizar y eliminar clientes.
+    """
+
+    def crear_cliente(self, cliente: dict) -> bool:
+        """
+        Inserta un nuevo cliente en la base de datos.
+        
+        El diccionario 'cliente' debe contener las claves:
+          - 'nombre'
+          - 'apellido'
+          - 'cuil'
+          - 'telefono' (opcional)
+          - 'email' (opcional)
+          - 'direccion' (opcional)
+        
+        Retorna True si la operación es exitosa, o False en caso contrario.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return False
+            cursor = conexion.cursor()
+            cursor.execute("USE ventas_db")
+            sql = """
+                INSERT INTO clientes (nombre, apellido, cuil, telefono, email, direccion)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            datos = (
+                cliente["nombre"],
+                cliente["apellido"],
+                cliente["cuil"],
+                cliente.get("telefono", ""),
+                cliente.get("email", ""),
+                cliente.get("direccion", "")
+            )
+            cursor.execute(sql, datos)
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            return True
+        except Error as e:
+            messagebox.showerror("Error al crear cliente", str(e))
+            return False
+
+    def obtener_clientes(self) -> list:
+        """
+        Retorna una lista con todos los clientes registrados en la base de datos.
+        Cada cliente se retorna como un diccionario.
+        """
+        clientes = []
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return clientes
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("USE ventas_db")
+            cursor.execute("SELECT clienteId, nombre, apellido, cuil, telefono, email, direccion FROM clientes")
+            clientes = cursor.fetchall()
+            cursor.close()
+            conexion.close()
+        except Error as e:
+            messagebox.showerror("Error al obtener clientes", str(e))
+        return clientes
+
+    def actualizar_cliente(self, clienteId: int, cliente: dict) -> bool:
+        """
+        Actualiza los datos del cliente identificado por 'clienteId' con la información proveída en 'cliente'.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return False
+            cursor = conexion.cursor()
+            cursor.execute("USE ventas_db")
+            sql = """
+                UPDATE clientes
+                SET nombre = %s, apellido = %s, cuil = %s, telefono = %s, email = %s, direccion = %s
+                WHERE clienteId = %s
+            """
+            datos = (
+                cliente["nombre"],
+                cliente["apellido"],
+                cliente["cuil"],
+                cliente.get("telefono", ""),
+                cliente.get("email", ""),
+                cliente.get("direccion", ""),
+                clienteId
+            )
+            cursor.execute(sql, datos)
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            return True
+        except Error as e:
+            messagebox.showerror("Error al actualizar cliente", str(e))
+            return False
+
+    def eliminar_cliente(self, clienteId: int) -> bool:
+        """
+        Elimina el cliente con el identificador 'clienteId' de la base de datos.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return False
+            cursor = conexion.cursor()
+            cursor.execute("USE ventas_db")
+            sql = "DELETE FROM clientes WHERE clienteId = %s"
+            cursor.execute(sql, (clienteId,))
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            return True
+        except Error as e:
+            messagebox.showerror("Error al eliminar cliente", str(e))
+            return False
+
+if __name__ == "__main__":
+    # Ejemplo de uso:
+    cm = ClienteManager()
+
+    # Crear un cliente de ejemplo
+    cliente_ejemplo = {
+        "nombre": "Ana",
+        "apellido": "González",
+        "cuil": "20-87654321-9",
+        "telefono": "555-6789",
+        "email": "ana@example.com",
+        "direccion": "Av. Siempre Viva 742"
+    }
+    if cm.crear_cliente(cliente_ejemplo):
+        print("Cliente creado exitosamente.")
+
+    # Mostrar todos los clientes
+    clientes = cm.obtener_clientes()
+    print("Clientes registrados:", clientes)
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\logica\gestor_stock.py
+
+...-------------------...
+# src/logica/gestor_stock.py
+from tkinter import messagebox
+from datos.conexion_bd import ConexionBD
+from mysql.connector import Error
+from utils.utilidades import Utilidades
+
+class StockManager:
+    """
+    Clase que maneja la lógica para la gestión de productos.
+    
+    Provee métodos para:
+      - Agregar o actualizar un producto (por nombre, sumando stock y actualizando el precio).
+      - Obtener todos los productos.
+      - Modificar un producto.
+      - Eliminar un producto.
+    """
+    
+    def agregar_o_actualizar_producto(self, producto) -> bool:
+        """
+        Agrega un nuevo producto o, si ya existe (comparando en minúsculas el nombre),
+        actualiza el stock sumando la cantidad y actualiza el precio.
+        Retorna True si la operación es exitosa y False en caso contrario.
+        """
+        # Si la función de validación requiere un parent (para mostrar mensajes), aquí se pasa None.
+        if not Utilidades.validar_producto(None, producto):
+            return False
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if not conexion:
+                return False
+            # Usamos un cursor con dictionary=True para obtener resultados como diccionario.
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("USE ventas_db")
+            sql_busqueda = "SELECT prodId, stock FROM productos WHERE LOWER(nombre) = LOWER(%s)"
+            cursor.execute(sql_busqueda, (producto["nombre"],))
+            resultado = cursor.fetchone()
+            if resultado:
+                # Si se encontró el producto, suma el stock existente y actualiza el precio.
+                nuevo_stock = resultado["stock"] + producto["stock"]
+                sql_update = "UPDATE productos SET stock = %s, precio = %s WHERE prodId = %s"
+                cursor.execute(sql_update, (nuevo_stock, producto["precio"], resultado["prodId"]))
+            else:
+                # Inserta un nuevo producto.
+                sql_insert = "INSERT INTO productos (nombre, precio, stock) VALUES (%s, %s, %s)"
+                cursor.execute(sql_insert, (producto["nombre"], producto["precio"], producto["stock"]))
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            return True
+        except Error as e:
+            messagebox.showerror("Error en agregar o actualizar_producto:", e)
+            return False
+
+    def obtener_productos(self) -> list:
+        """
+        Retorna una lista de todos los productos disponibles en la base de datos.
+        """
+        productos = []
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion:
+                cursor = conexion.cursor(dictionary=True)
+                cursor.execute("USE ventas_db")
+                cursor.execute("SELECT prodId as prodId, nombre, precio, stock FROM productos")
+                productos = cursor.fetchall()
+                cursor.close()
+                conexion.close()
+        except Error as e:
+            messagebox.showerror("Error al obtener productos:", e)
+        return productos
+
+    def modificar_producto(self, parent, id_producto, producto_actualizado) -> bool:
+        """
+        Modifica los datos de un producto existente.
+        Recibe el identificador (id_producto) y un diccionario con los datos actualizados.
+        Retorna True si se actualizó con éxito.
+        """
+        if not Utilidades.validar_producto(parent, producto_actualizado):
+            return False
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion:
+                cursor = conexion.cursor()
+                cursor.execute("USE ventas_db")
+                sql = "UPDATE productos SET nombre=%s, precio=%s, stock=%s WHERE prodId=%s"
+                datos = (
+                    producto_actualizado["nombre"],
+                    producto_actualizado["precio"],
+                    producto_actualizado["stock"],
+                    id_producto
+                )
+                cursor.execute(sql, datos)
+                conexion.commit()
+                cursor.close()
+                conexion.close()
+                return True
+        except Error as e:
+            messagebox.showerror("Error al modificar producto:", e, parent=parent)
+        return False
+
+    def eliminar_producto(self, id_producto) -> bool:
+        """
+        Elimina el producto que tenga el id indicado.
+        Retorna True si la eliminación es exitosa; en caso contrario, False.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion:
+                cursor = conexion.cursor()
+                cursor.execute("USE ventas_db")
+                sql = "DELETE FROM productos WHERE prodId=%s"
+                cursor.execute(sql, (id_producto,))
+                conexion.commit()
+                cursor.close()
+                conexion.close()
+                return True
+        except Error as e:
+            messagebox.showerror("Error al eliminar producto:", e)
+        return False
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    stock_manager = StockManager()
+    
+    # Ejemplo: agregar o actualizar un producto.
+    producto = {
+        "nombre": "Manzana",
+        "precio": 1.2,
+        "stock": 100
+    }
+    if stock_manager.agregar_o_actualizar_producto(producto):
+        print("Producto agregado/actualizado con éxito.")
+    else:
+        print("Error al agregar/actualizar el producto.")
+    
+    # Ejemplo: obtener productos.
+    productos = stock_manager.obtener_productos()
+    print("Productos:", productos)
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\logica\gestor_usuarios.py
+
+...-------------------...
+# src/logica/gestor_usuarios.py
+from datos.conexion_bd import ConexionBD
+from mysql.connector import Error
+
+class UsuarioManager:
+    """
+    Clase encargada de gestionar las operaciones relacionadas con los usuarios
+    en la base de datos (ventas_db). Incluye métodos para:
+      - Validar credenciales.
+      - Crear un nuevo usuario.
+      - Obtener todos los usuarios.
+      - Eliminar un usuario.
+      - Actualizar los datos de un usuario.
+    """
+
+    def validar_usuario(self, usuario: str, password: str):
+        """
+        Busca en la tabla 'usuarios' un registro que coincida con el usuario y
+        la contraseña. Retorna un diccionario con la información si las credenciales
+        son correctas, o None en caso contrario.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return None
+
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("USE ventas_db")
+            cursor.execute(
+                "SELECT userId, usuario, password, role FROM usuarios WHERE usuario = %s",
+                (usuario,)
+            )
+            resultado = cursor.fetchone()
+            cursor.close()
+            conexion.close()
+
+            if resultado and resultado["password"] == password:
+                return resultado
+            return None
+        except Error as e:
+            print("Error al validar usuario:", e)
+            return None
+
+    def crear_usuario(self, usuario: str, password: str, rol: str) -> bool:
+        """
+        Inserta un nuevo usuario en la base de datos. Retorna True si se creó correctamente,
+        o False en caso de error.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return False
+
+            cursor = conexion.cursor()
+            cursor.execute("USE ventas_db")
+            cursor.execute(
+                "INSERT INTO usuarios (usuario, password, role) VALUES (%s, %s, %s)",
+                (usuario, password, rol)
+            )
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            return True
+        except Error as e:
+            print("Error al crear usuario:", e)
+            return False
+
+    def obtener_usuarios(self) -> list:
+        """
+        Retorna una lista con la información de todos los usuarios existentes en la base de datos.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            cursor = conexion.cursor()
+            cursor.execute("USE ventas_db")
+            cursor.execute("SELECT userId, usuario, password, role FROM usuarios")
+            usuarios = cursor.fetchall()
+            conexion.close()
+            return usuarios
+        except Error as e:
+            print("Error al obtener usuarios:", e)
+            return []
+
+    def eliminar_usuario(self, id_usuario) -> bool:
+        """
+        Elimina el usuario cuyo identificador sea igual a 'id_usuario'.
+        Retorna True si se eliminó correctamente o False en caso de error.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            cursor = conexion.cursor()
+            cursor.execute("USE ventas_db")
+            cursor.execute("DELETE FROM usuarios WHERE userId = %s", (id_usuario,))
+            conexion.commit()
+            return cursor.rowcount > 0
+        except Error:
+            return False
+        finally:
+            conexion.close()
+
+    def actualizar_usuario(self, id_usuario, usuario: str, password: str, rol: str) -> bool:
+        """
+        Actualiza los datos del usuario identificado por 'id_usuario'. Retorna True si se actualizó con éxito,
+        o False en caso contrario.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            cursor = conexion.cursor()
+            cursor.execute("USE ventas_db")
+            cursor.execute(
+                """
+                UPDATE usuarios 
+                SET usuario = %s, password = %s, role = %s 
+                WHERE userId = %s
+                """,
+                (usuario, password, rol, id_usuario)
+            )
+            conexion.commit()
+            return cursor.rowcount > 0
+        except Error:
+            return False
+        finally:
+            conexion.close()
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    um = UsuarioManager()
+    
+    # Validar credenciales (por ejemplo, usuario "admin" con contraseña "admin")
+    user = um.validar_usuario("admin", "admin")
+    if user:
+        print("Usuario validado:", user)
+    else:
+        print("Credenciales incorrectas")
+    
+    # Crear un nuevo usuario:
+    if um.crear_usuario("nuevo_usuario", "pass123", "empleado"):
+        print("Usuario creado exitosamente.")
+    else:
+        print("Error al crear usuario.")
+    
+    # Obtener la lista de usuarios
+    usuarios = um.obtener_usuarios()
+    print("Usuarios:", usuarios)
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\logica\gestor_ventas.py
+
+...-------------------...
+# src/logica/gestor_ventas.py
+from datos.conexion_bd import ConexionBD
+from mysql.connector import Error
+
+class VentaManager:
+    """
+    Clase para gestionar la confirmación de ventas.
+    
+    El método 'confirmar_venta' verifica el stock de cada producto del carrito, 
+    actualiza la base de datos en consecuencia y devuelve un mensaje indicativo del resultado.
+    """
+
+    def confirmar_venta(self, carrito):
+        """
+        Confirma una venta actualizando el stock de productos según la cantidad vendida.
+        
+        Parámetros:
+            carrito: Lista de diccionarios, donde cada diccionario debe contener:
+                     - 'prodId': ID del producto.
+                     - 'cantidad': Cantidad vendida.
+        
+        Retorna:
+            Una tupla (bool, str) en la que:
+              - El primer elemento indica si la venta fue confirmada exitosamente.
+              - El segundo elemento es un mensaje que explica el resultado.
+        """
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return False, "No se pudo conectar a la base de datos."
+            
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("USE ventas_db")
+            
+            for item in carrito:
+                id_producto = item['prodId']
+                cantidad_vendida = item['cantidad']
+                
+                # Verificar el stock disponible del producto
+                cursor.execute("SELECT stock FROM productos WHERE prodId=%s", (id_producto,))
+                resultado = cursor.fetchone()
+                if resultado is None:
+                    conexion.rollback()
+                    return False, f"Producto con ID {id_producto} no encontrado."
+                
+                stock_actual = resultado['stock']
+                if stock_actual < cantidad_vendida:
+                    conexion.rollback()
+                    return False, f"Stock insuficiente para el producto ID {id_producto}."
+                
+                nuevo_stock = stock_actual - cantidad_vendida
+                cursor.execute("UPDATE productos SET stock=%s WHERE prodId=%s", (nuevo_stock, id_producto))
+            
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            return True, "Venta confirmada exitosamente. Proceda a elegir dónde guardará la factura."
+        except Error as e:
+            return False, str(e)
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    venta_manager = VentaManager()
+    carrito_ejemplo = [
+        {'prodId': 1, 'cantidad': 2},
+        {'prodId': 3, 'cantidad': 1}
+    ]
+    resultado, mensaje = venta_manager.confirmar_venta(carrito_ejemplo)
+    print("Resultado:", resultado, "Mensaje:", mensaje)
+
+...-------------------...
+Archivo: C:\Users\invit\OneDrive\Documentos\farmanaccio\utils\utilidades.py
+
+...-------------------...
+# src/utils/utilidades.py
+from tkinter import messagebox
+
+class Utilidades:
+    @staticmethod
+    def confirmar_accion(parent, accion: str, tipo_usuario: str = "usuario") -> bool:
+        """
+        Muestra una ventana de confirmación y retorna True si el usuario confirma.
+        
+        Parámetros:
+          parent: Widget padre para la ventana de confirmación.
+          accion: Texto descriptivo de la acción a confirmar.
+          tipo_usuario: (Opcional) para personalizar el mensaje (por ejemplo, 'Usuario').
+        
+        Retorna:
+          bool: True si el usuario confirma, False si no.
+        """
+        mensaje = f"{tipo_usuario.capitalize()}, ¿estás seguro de que querés {accion}?"
+        return messagebox.askyesno("Confirmar acción", mensaje, parent=parent, default="no")
+    
+    @staticmethod
+    def validar_producto(parent, producto) -> bool:
+        """
+        Valida que el diccionario 'producto' tenga:
+          - Un nombre compuesto únicamente de letras, números y espacios.
+          - Un precio numérico mayor a 0.
+          - Un stock numérico no negativo.
+        
+        Parámetros:
+          parent: Widget padre para mostrar los mensajes.
+          producto: Diccionario con las claves 'nombre', 'precio' y 'stock'.
+          
+        Retorna:
+          bool: True si el producto es válido, False en caso contrario.
+        """
+        nombre = producto.get("nombre", "")
+        if not nombre.replace(" ", "").isalnum():
+            messagebox.showwarning("Advertencia", "El nombre debe contener solo letras, números y espacios.", parent=parent)
+            return False
+        try:
+            precio = float(producto.get("precio"))
+            stock = int(producto.get("stock"))
+        except (ValueError, TypeError):
+            messagebox.showwarning("Advertencia", "El precio y el stock deben ser numéricos.", parent=parent)
+            return False
+        if precio <= 0:
+            messagebox.showwarning("Advertencia", "El precio debe ser mayor a 0.", parent=parent)
+            return False
+        if stock < 0:
+            messagebox.showwarning("Advertencia", "El stock no puede ser negativo.", parent=parent)
+            return False
+        return True
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    # Simulación de uso, donde 'None' se puede usar como parent si no tienes una UI activa.
+    producto_ejemplo = {"nombre": "Manzana", "precio": "1.5", "stock": "100"}
+    if Utilidades.validar_producto(None, producto_ejemplo):
+        print("El producto es válido.")
+    else:
+        print("El producto no es válido.")
+        
+    if Utilidades.confirmar_accion(None, "realizar la acción"):
+        print("Acción confirmada.")
+    else:
+        print("Acción cancelada.")
+
+...-------------------...

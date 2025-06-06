@@ -150,7 +150,7 @@ class MainWindow(ctk.CTk):
         
     def abrir_ventas(self):
         self.withdraw()
-        from gui.ventas_window import VentasWindow
+        from gui.ventas.ventas_window import VentasWindow
         ventana_ventas = VentasWindow(self)
         self.wait_window(ventana_ventas)
         self.deiconify()
