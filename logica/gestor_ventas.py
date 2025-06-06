@@ -12,17 +12,9 @@ class VentaManager:
 
     def confirmar_venta(self, carrito):
         """
-        Confirma una venta actualizando el stock de productos según la cantidad vendida.
-        
-        Parámetros:
-            carrito: Lista de diccionarios, donde cada diccionario debe contener:
-                     - 'prodId': ID del producto.
-                     - 'cantidad': Cantidad vendida.
-        
-        Retorna:
-            Una tupla (bool, str) en la que:
-              - El primer elemento indica si la venta fue confirmada exitosamente.
-              - El segundo elemento es un mensaje que explica el resultado.
+        Confirma una venta actualizando el stock y
+        creando un registro en las tablas 'facturas' y 'factura_detalles'.
+        Retorna (bool, str) según corresponda.
         """
         try:
             conexion = ConexionBD.obtener_conexion()
@@ -32,24 +24,55 @@ class VentaManager:
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE ventas_db")
             
+            total_bruto = 0.0
+            # Verifica el stock y calcula el total
             for item in carrito:
                 id_producto = item['prodId']
                 cantidad_vendida = item['cantidad']
                 
-                # Verificar el stock disponible del producto
-                cursor.execute("SELECT stock FROM productos WHERE prodId=%s", (id_producto,))
+                cursor.execute("SELECT stock, precio FROM productos WHERE prodId=%s", (id_producto,))
                 resultado = cursor.fetchone()
                 if resultado is None:
                     conexion.rollback()
                     return False, f"Producto con ID {id_producto} no encontrado."
                 
                 stock_actual = resultado['stock']
+                precio_unitario = resultado['precio']
                 if stock_actual < cantidad_vendida:
                     conexion.rollback()
                     return False, f"Stock insuficiente para el producto ID {id_producto}."
                 
-                nuevo_stock = stock_actual - cantidad_vendida
-                cursor.execute("UPDATE productos SET stock=%s WHERE prodId=%s", (nuevo_stock, id_producto))
+                total_bruto += float(precio_unitario) * cantidad_vendida
+            
+            # Puedes calcular un descuento si lo manejas (ejemplo: descuento del 0% si no hay descuento)
+            descuento = 0.0  
+            total_neto = total_bruto * (1 - descuento / 100)
+            
+            # Inserta la factura en la tabla 'facturas'
+            cursor.execute(
+                """
+                INSERT INTO facturas (fechaEmision, horaEmision, total_neto, total_bruto, descuento)
+                VALUES (CURRENT_DATE, CURRENT_TIME, %s, %s, %s)
+                """,
+                (total_neto, total_bruto, descuento)
+            )
+            factura_id = cursor.lastrowid  # Obtén el ID de la factura recién insertada
+            
+            # Inserta cada detalle en la tabla 'factura_detalles'
+            for item in carrito:
+                cursor.execute("SELECT precio FROM productos WHERE prodId=%s", (item['prodId'],))
+                precio_unitario = cursor.fetchone()['precio']
+                cursor.execute(
+                    """
+                    INSERT INTO factura_detalles (facturaId, prodId, cantidad, precioUnitario)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (factura_id, item['prodId'], item['cantidad'], precio_unitario)
+                )
+                # Actualiza el stock del producto
+                cursor.execute("SELECT stock FROM productos WHERE prodId=%s", (item['prodId'],))
+                nuevo_stock = cursor.fetchone()['stock'] - item['cantidad']
+                cursor.execute("UPDATE productos SET stock=%s WHERE prodId=%s", (nuevo_stock, item['prodId']))
             
             conexion.commit()
             cursor.close()
@@ -57,6 +80,7 @@ class VentaManager:
             return True, "Venta confirmada exitosamente. Proceda a elegir dónde guardará la factura."
         except Error as e:
             return False, str(e)
+
 
 # Ejemplo de uso:
 if __name__ == "__main__":
