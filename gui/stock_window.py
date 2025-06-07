@@ -33,35 +33,72 @@ class StockWindow(ctk.CTkToplevel):
         # Instanciar el gestor de stock (nuestra nueva clase que centraliza la lógica de productos)
         self.stock_manager = StockManager()
 
-        # -------------------- Área de Búsqueda --------------------
-        self.search_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.search_frame.pack(padx=10, pady=5, expand=True)
-        self.search_frame_inside = ctk.CTkFrame(self.search_frame, fg_color="transparent")
-        self.search_frame_inside.pack(padx=5)
-        self.entry_search = ctk.CTkEntry(self.search_frame_inside, width=500, placeholder_text="Buscar producto...")
-        self.entry_search.pack(side="left", fill="x", expand=True, padx=(0, 50))
-        self.btn_search = ctk.CTkButton(self.search_frame_inside, text="Buscar", command=self.buscar_productos)
-        self.btn_search.pack(side="left")
+        # -------------------- Área de Búsqueda de Vademécum --------------------
 
-        # -------------------- Área del Treeview --------------------
-        frame_tabla = ctk.CTkFrame(self)
-        frame_tabla.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+        self.search_frame_vademecum = ctk.CTkFrame(self, fg_color="transparent")
+        self.search_frame_vademecum.pack(padx=10, pady=5, expand=True)
+        self.search_frame_inside_vademecum = ctk.CTkFrame(self.search_frame_vademecum, fg_color="transparent")
+        self.search_frame_inside_vademecum.pack(padx=5)
+        self.entry_search_vademecum = ctk.CTkEntry(self.search_frame_inside_vademecum, width=500, placeholder_text="Buscar producto...")
+        self.entry_search_vademecum.pack(side="left", fill="x", expand=True, padx=(0, 50))
+        self.btn_search_vademecum = ctk.CTkButton(self.search_frame_inside_vademecum, text="Buscar", command=self.buscar_productos)
+        self.btn_search_vademecum.pack(side="left")
+
+        # -------------------- Área del Treeview de Vademécum --------------------
+
+        frame_tabla_vademecum = ctk.CTkFrame(self)
+        frame_tabla_vademecum.pack(fill="both", expand=True, padx=20, pady=(5, 10))
         # Configurar el Treeview para mostrar productos
-        self.tree = ttk.Treeview(frame_tabla, columns=("ID", "Nombre", "Precio", "Stock"), show='headings')
-        self.tree.heading("ID", text="ID")
-        self.tree.heading("Nombre", text="Nombre")
-        self.tree.heading("Precio", text="Precio")
-        self.tree.heading("Stock", text="Stock")
-        self.tree.column("ID", width=50)
-        self.tree.column("Nombre", width=200)
-        self.tree.column("Precio", width=100)
-        self.tree.column("Stock", width=100)
-        self.tree.pack(side="left", padx=(10, 5), pady=10, expand=True, fill="both")
-        self.tree.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
-        scrollbar = ctk.CTkScrollbar(frame_tabla, orientation="vertical")
-        scrollbar.configure(command=self.tree.yview)
-        scrollbar.pack(side="right", fill="y")
-        self.tree.configure(yscrollcommand=scrollbar.set)
+        self.tree_vademecum = ttk.Treeview(frame_tabla_vademecum, columns=("ID", "Nombre", "Precio", "Stock"), show='headings')
+        self.tree_vademecum.heading("ID", text="ID")
+        self.tree_vademecum.heading("Nombre Comercial", text="Nombre Comercial")
+        self.tree_vademecum.heading("Presentación", text="Presentación")
+        self.tree_vademecum.heading("Acción Farmacologica", text="Accion Farmacologica")
+        self.tree_vademecum.heading("Principio Activo", text="Principio Activo")
+        self.tree_vademecum.heading("Laboratorio", text="Laboratorio")
+
+        self.tree_vademecum.column("ID", width=50)
+        self.tree_vademecum.column("Nombre Comercial", width=200)
+        self.tree_vademecum.column("Presentación", width=100)
+        self.tree_vademecum.column("Acción Farmacologica", width=100)
+        self.tree_vademecum.column("Laboratorio", width=100)
+        
+        self.tree_vademecum.pack(side="left", padx=(10, 5), pady=10, expand=True, fill="both")
+        self.tree_vademecum.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
+        scrollbar_vademecum = ctk.CTkScrollbar(frame_tabla_vademecum, orientation="vertical")
+        scrollbar_vademecum.configure(command=self.tree_vademecum.yview)
+        scrollbar_vademecum.pack(side="right", fill="y")
+        self.tree_vademecum.configure(yscrollcommand=scrollbar_vademecum.set)
+
+        # -------------------- Área de Búsqueda de Productos --------------------
+        self.search_frame_productos = ctk.CTkFrame(self, fg_color="transparent")
+        self.search_frame_productos.pack(padx=10, pady=5, expand=True)
+        self.search_frame_inside_productos = ctk.CTkFrame(self.search_frame_productos, fg_color="transparent")
+        self.search_frame_inside_productos.pack(padx=5)
+        self.entry_search_productos = ctk.CTkEntry(self.search_frame_inside_productos, width=500, placeholder_text="Buscar producto...")
+        self.entry_search_productos.pack(side="left", fill="x", expand=True, padx=(0, 50))
+        self.btn_search_productos = ctk.CTkButton(self.search_frame_inside_productos, text="Buscar", command=self.buscar_productos)
+        self.btn_search_productos.pack(side="left")
+
+        # -------------------- Área del Treeview de Productos --------------------
+        frame_tabla_productos = ctk.CTkFrame(self)
+        frame_tabla_productos.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+        # Configurar el Treeview para mostrar productos
+        self.tree_productos = ttk.Treeview(frame_tabla_productos, columns=("ID", "Nombre", "Precio", "Stock"), show='headings')
+        self.tree_productos.heading("ID", text="ID")
+        self.tree_productos.heading("Nombre", text="Nombre")
+        self.tree_productos.heading("Precio", text="Precio")
+        self.tree_productos.heading("Stock", text="Stock")
+        self.tree_productos.column("ID", width=50)
+        self.tree_productos.column("Nombre", width=200)
+        self.tree_productos.column("Precio", width=100)
+        self.tree_productos.column("Stock", width=100)
+        self.tree_productos.pack(side="left", padx=(10, 5), pady=10, expand=True, fill="both")
+        self.tree_productos.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
+        scrollbar_productos = ctk.CTkScrollbar(frame_tabla_productos, orientation="vertical")
+        scrollbar_productos.configure(command=self.tree_productos.yview)
+        scrollbar_productos.pack(side="right", fill="y")
+        self.tree_productos.configure(yscrollcommand=scrollbar_productos.set)
         
         # -------------------- Formulario de Edición --------------------
         self.frame_form = ctk.CTkFrame(self)
@@ -110,9 +147,9 @@ class StockWindow(ctk.CTkToplevel):
         Utiliza el término ingresado en el entry para buscar productos en la base de datos.
         Se filtra la lista de productos obtenida del StockManager.
         """
-        termino = self.entry_search.get().strip()
-        for i in self.tree.get_children():
-            self.tree.delete(i)
+        termino = self.entry_search_productos.get().strip()
+        for i in self.tree_productos.get_children():
+            self.tree_productos.delete(i)
         try:
             # Si StockManager no tiene 'buscar_productos', se filtran los productos aquí:
             productos = [
@@ -120,7 +157,7 @@ class StockWindow(ctk.CTkToplevel):
                 if termino.lower() in producto["nombre"].lower()
             ]
             for producto in productos:
-                self.tree.insert("", "end", values=(
+                self.tree_productos.insert("", "end", values=(
                     producto["prodId"], producto["nombre"], producto["precio"], producto["stock"]
                 ))
         except Exception as e:
@@ -132,11 +169,11 @@ class StockWindow(ctk.CTkToplevel):
         Recupera todos los productos utilizando el método 'obtener_productos' del StockManager
         y los muestra en el Treeview.
         """
-        for i in self.tree.get_children():
-            self.tree.delete(i)
+        for i in self.tree_productos.get_children():
+            self.tree_productos.delete(i)
         productos = self.stock_manager.obtener_productos()
         for producto in productos:
-            self.tree.insert("", "end", values=(
+            self.tree_productos.insert("", "end", values=(
                 producto["prodId"], producto["nombre"], producto["precio"], producto["stock"]
             ))
             
@@ -168,11 +205,11 @@ class StockWindow(ctk.CTkToplevel):
         con los nuevos datos ingresados en el formulario. Se llama al método
         'modificar_producto' del StockManager para actualizar la base de datos.
         """
-        selected_item = self.tree.focus()
+        selected_item = self.tree_productos.focus()
         if not selected_item:
             messagebox.showerror("Error", "Seleccione un producto para modificar.", parent=self)
             return
-        values = self.tree.item(selected_item, "values")
+        values = self.tree_productos.item(selected_item, "values")
         id_producto = values[0]
         try:
             producto_actualizado = {
@@ -196,11 +233,11 @@ class StockWindow(ctk.CTkToplevel):
         Se confirma la acción y, en caso afirmativo, se llama al método 'eliminar_producto'
         del StockManager. Luego se recarga la lista de productos.
         """
-        selected_item = self.tree.focus()
+        selected_item = self.tree_productos.focus()
         if not selected_item:
             messagebox.showerror("Error", "Seleccione un producto para eliminar.", parent=self)
             return
-        values = self.tree.item(selected_item, "values")
+        values = self.tree_productos.item(selected_item, "values")
         id_producto = values[0]
         if Utilidades.confirmar_accion(self, "eliminar este producto", tipo_usuario="administrador"):
             if self.stock_manager.eliminar_producto(id_producto):
@@ -214,9 +251,9 @@ class StockWindow(ctk.CTkToplevel):
         Al seleccionar un producto en el Treeview, carga sus datos en los campos del formulario
         para permitir su edición.
         """
-        selected_item = self.tree.focus()
+        selected_item = self.tree_productos.focus()
         if selected_item:
-            values = self.tree.item(selected_item, "values")
+            values = self.tree_productos.item(selected_item, "values")
             self.entry_nombre.delete(0, "end")
             self.entry_nombre.insert(0, values[1])
             self.entry_precio.delete(0, "end")

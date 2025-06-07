@@ -7,7 +7,7 @@ class TablaCreator:
     Clase encargada de crear la base de datos 'ventas_db' y sus tablas asociadas.
     Esto incluye:
       - La creación de la base de datos (si no existe)
-      - Tablas: productos, usuarios, clientes, facturas y factura_detalles.
+      - Tablas: productos, usuarios, clientes, facturas, factura_detalles y vademecum.
       - Inserción de un usuario administrador por defecto (si no existe)
     """
     
@@ -22,6 +22,19 @@ class TablaCreator:
             # Crear la base de datos si no existe
             cursor.execute("CREATE DATABASE IF NOT EXISTS ventas_db")
             cursor.execute("USE ventas_db")
+
+            # Crear la tabla vademecum, según los atributos especificados
+            sentencia_vademecum = """
+                CREATE TABLE IF NOT EXISTS vademecum (
+                    vademecumID INT AUTO_INCREMENT PRIMARY KEY,
+                    nombreComercial VARCHAR(255) NOT NULL,
+                    presentacion VARCHAR(255) NOT NULL,
+                    accionFarmacologica VARCHAR(255) NOT NULL,
+                    principioActivo VARCHAR(255) NOT NULL,
+                    laboratorio VARCHAR(255) NOT NULL
+                )
+            """
+            cursor.execute(sentencia_vademecum)
             
             # Crear la tabla de productos
             sentencia_productos = """
@@ -33,6 +46,14 @@ class TablaCreator:
                 )
             """
             cursor.execute(sentencia_productos)
+
+            sentencia_detalletrazabilidad = """
+                CREATE TABLE IF NOT EXISTS detalleTrazabilidad (
+                    prodId
+                    
+                    )
+
+            """
             
             # Crear la tabla de usuarios
             sentencia_usuarios = """
@@ -66,12 +87,12 @@ class TablaCreator:
                     fechaEmision DATE DEFAULT CURRENT_DATE,
                     horaEmision TIME,
                     total_neto DECIMAL(10, 2) NOT NULL,
-                    total_bruto DECIMAL (10, 2) NOT NULL,
+                    total_bruto DECIMAL(10, 2) NOT NULL,
                     descuento DECIMAL(5, 2) DEFAULT 0.00
                 )
             """
             cursor.execute(sentencia_facturas)
-
+            
             # Crear la tabla de factura_detalles
             sentencia_factura_detalles = """
                 CREATE TABLE IF NOT EXISTS factura_detalles (
@@ -85,7 +106,7 @@ class TablaCreator:
             """
             cursor.execute(sentencia_factura_detalles)
             
-            # Insertar un administrador por defecto si no existe
+            # Insertar un usuario administrador por defecto si no existe
             cursor.execute("SELECT * FROM usuarios WHERE usuario='admin'")
             if cursor.fetchone() is None:
                 cursor.execute("INSERT INTO usuarios (usuario, password, role) VALUES ('admin', 'admin', 'admin')")
