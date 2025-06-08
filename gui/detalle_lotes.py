@@ -3,6 +3,7 @@ import customtkinter as ctk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry  
 from datos.conexion_bd import ConexionBD
+from gui.login import icono_logotipo
 from mysql.connector import Error
 import datetime
 
@@ -75,6 +76,8 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
         self.btn_confirm.grid(row=3, column=0, columnspan=4, pady=10)
         
         ctk.CTkButton(self, text="Cerrar", command=self.destroy).pack(pady=5)
+
+        self.after(201, lambda: self.iconbitmap(icono_logotipo))
     
     def on_tree_select(self, event):
         selected = self.tree.selection()
@@ -220,6 +223,8 @@ class DetalleLotesWindow(ctk.CTkToplevel):
         self.tree.bind("<Double-1>", self.ver_detalle_lote)
         
         ctk.CTkButton(self, text="Cerrar", command=self.destroy).pack(pady=10)
+
+        self.after(201, lambda: self.iconbitmap(icono_logotipo))
     
     def ver_detalle_lote(self, event):
         item = self.tree.focus()
