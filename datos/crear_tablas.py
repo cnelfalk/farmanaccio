@@ -5,10 +5,15 @@ from mysql.connector import Error
 class TablaCreator:
     """
     Clase encargada de crear la base de datos 'ventas_db' y sus tablas asociadas.
-    Esto incluye:
-      - La creación de la base de datos (si no existe)
-      - Tablas: productos, usuarios, clientes, facturas, factura_detalles y vademecum.
-      - Inserción de un usuario administrador por defecto (si no existe)
+    
+    Crea:
+      - La base de datos (si no existe).
+      - Tablas:
+            - vademecum: catálogo de medicamentos,
+            - productos: información general de cada producto, con campo "activo" para eliminación lógica.
+            - lotes_productos: cada entrada (o lote) del producto (para trazabilidad), con UNIQUE (prodId, numeroLote, fechaIngreso)
+            - usuarios, clientes, facturas, y factura_detalles.
+      - Inserción de un usuario administrador por defecto (si no existe).
     """
     
     def crear_base_de_datos_y_tablas(self):
@@ -23,7 +28,7 @@ class TablaCreator:
             cursor.execute("CREATE DATABASE IF NOT EXISTS ventas_db")
             cursor.execute("USE ventas_db")
 
-            # Crear la tabla vademecum, según los atributos especificados
+            # Crear la tabla vademecum (catálogo importado)
             sentencia_vademecum = """
                 CREATE TABLE IF NOT EXISTS vademecum (
                     vademecumID INT AUTO_INCREMENT PRIMARY KEY,
@@ -36,25 +41,37 @@ class TablaCreator:
             """
             cursor.execute(sentencia_vademecum)
             
-            # Crear la tabla de productos
+            # Crear la tabla de productos (productos generales)
+            # Se agrega la columna "activo" para la eliminación lógica (1=activo, 0=inactivo)
             sentencia_productos = """
                 CREATE TABLE IF NOT EXISTS productos (
                     prodId INT AUTO_INCREMENT PRIMARY KEY,
                     nombre VARCHAR(100) NOT NULL,
                     precio DECIMAL(10,2) NOT NULL,
-                    stock INT NOT NULL
+                    stock INT NOT NULL,
+                    activo TINYINT(1) NOT NULL DEFAULT 1
+                    -- La columna 'vencimiento' se gestionará a nivel de lote.
                 )
             """
             cursor.execute(sentencia_productos)
-
-            sentencia_detalletrazabilidad = """
-                CREATE TABLE IF NOT EXISTS detalleTrazabilidad (
-                    prodId
-                    
-                    )
-
-            """
             
+            # Crear la tabla de lotes_productos (para trazabilidad detallada)
+            # Se agrega una restricción UNIQUE para evitar inserciones duplicadas para un mismo prodId, lote y fechaIngreso.
+            sentencia_lotes = """
+                CREATE TABLE IF NOT EXISTS lotes_productos (
+                    loteID INT AUTO_INCREMENT PRIMARY KEY,
+                    prodId INT NOT NULL,
+                    numeroLote VARCHAR(50) NOT NULL,
+                    fechaIngreso DATE NOT NULL,
+                    vencimiento DATE NOT NULL,
+                    cantidad_ingresada INT NOT NULL,
+                    cantidad_disponible INT NOT NULL,
+                    UNIQUE(prodId, numeroLote, fechaIngreso),
+                    FOREIGN KEY (prodId) REFERENCES productos(prodId)
+                )
+            """
+            cursor.execute(sentencia_lotes)
+
             # Crear la tabla de usuarios
             sentencia_usuarios = """
                 CREATE TABLE IF NOT EXISTS usuarios (
@@ -121,6 +138,6 @@ class TablaCreator:
             print("Error:", ex)
 
 if __name__ == "__main__":
-    # Si el script se ejecuta directamente, se crea la base de datos y las tablas.
+    # Ejecuta la creación de la base de datos y tablas.
     creador = TablaCreator()
     creador.crear_base_de_datos_y_tablas()
