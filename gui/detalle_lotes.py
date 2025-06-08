@@ -15,6 +15,8 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
         self.lote_records = lote_records
         self.selected_record_id = None
 
+        self.grab_set()
+
         label_title = ctk.CTkLabel(self, text=f"Registros para el Lote: {numero_lote}", font=("Arial", 14, "bold"))
         label_title.pack(pady=10)
 
@@ -179,6 +181,8 @@ class DetalleLotesWindow(ctk.CTkToplevel):
         self.geometry("700x500")
         self.producto = producto
         self.detalle_lotes = detalle_lotes
+
+        self.grab_set()
         
         frame_general = ctk.CTkFrame(self)
         frame_general.pack(fill="x", padx=10, pady=10)
