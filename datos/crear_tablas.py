@@ -80,7 +80,7 @@ class TablaCreator:
                     telefono VARCHAR(20),
                     email VARCHAR(100),
                     direccion VARCHAR(150),
-                    iva VARCHAR(50) NOT NULL DEFAULT '' UNIQUE
+                    iva VARCHAR(50) NOT NULL DEFAULT ''
                 )
             """
             cursor.execute(sentencia_clientes)
