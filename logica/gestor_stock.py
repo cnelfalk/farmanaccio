@@ -5,6 +5,7 @@ import customtkinter as ctk  # Para el diálogo personalizado
 from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
 from utils.utilidades import Utilidades
+from gui.login import icono_logotipo
 
 # --- Nueva clase para preguntar por el precio ---
 class PrecioOptionDialog(ctk.CTkToplevel):
@@ -75,6 +76,8 @@ class TripleOptionDialog(ctk.CTkToplevel):
 
         btn_continuar = ctk.CTkButton(frame_buttons, text="Continuar", command=lambda: self._cerrar("continuar"))
         btn_continuar.grid(row=0, column=2, padx=5)
+
+        self.after(201, lambda: self.iconbitmap(icono_logotipo))
 
         self.protocol("WM_DELETE_WINDOW", lambda: self._cerrar("atras"))
         self.wait_window()

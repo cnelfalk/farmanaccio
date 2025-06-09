@@ -15,7 +15,7 @@
     "CTkButton": {
       "corner_radius": 6,
       "border_width": 0,
-      "fg_color": "#A89866",
+      "fg_color": "#8E663E",
       "hover_color": "#544B33",
       "border_color": "#593D27",
       "text_color": "white",
@@ -58,7 +58,7 @@
       "corner_radius": 1000,
       "border_width_checked": 6,
       "border_width_unchecked": 3,
-      "fg_color": ["#9DB754", "9DB754"],
+      "fg_color": ["#9DB754", "#9DB754"],
       "border_color": ["#3E454A", "#949A9F"],
       "hover_color": ["#325882", "#14375e"],
       "text_color": ["gray14", "gray84"],

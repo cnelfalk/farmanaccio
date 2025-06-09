@@ -7,6 +7,7 @@ import tkinter.messagebox as messagebox
 from datetime import datetime
 import config  # Para leer config.manual_lote_selection
 from logica.generar_factura import FacturaGenerator
+from gui.login import icono_logotipo
 
 class LoteSelectionDialog(ctk.CTkToplevel):
     """
@@ -33,6 +34,8 @@ class LoteSelectionDialog(ctk.CTkToplevel):
         self.btn_ok = ctk.CTkButton(self, text="Aceptar", command=self.on_accept)
         self.btn_ok.pack(padx=20, pady=10)
         self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        self.after(201, lambda: self.iconbitmap(icono_logotipo))
 
         self.wait_window(self)
 

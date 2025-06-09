@@ -1,4 +1,4 @@
-# src/gui/stock_window.py
+# stock_window.py
 import customtkinter as ctk
 from gui.login import icono_logotipo
 from tkinter import ttk, messagebox, font as tkFont
@@ -10,20 +10,33 @@ from logica.gestor_inventario import GestorInventario  # Para inventario agrupad
 from gui.detalle_lotes import DetalleLotesWindow
 import datetime
 
+# --- Integración de la clase personalizada para DateEntry ---
+class CustomDateEntry(DateEntry):
+    def _drop_down(self):
+        """
+        Sobreescribe el método _drop_down para quitar el binding al evento <FocusOut>
+        que hace que el calendario se cierre al navegar con las flechas.
+        """
+        top = super()._drop_down()
+        top.unbind("<FocusOut>")
+        return top
+
+# --- Fin integración de CustomDateEntry ---
+
+
 class StockWindow(ctk.CTkToplevel):
     """
     Ventana para el control de stock.
     Permite elegir entre dos modos:
-      - "Stock": muestra el inventario agrupado; en este modo se ocultan los campos de 
-                 "Stock", "Lote" y "Fecha de Vencimiento" en el formulario.
-      - "Vademécum": muestra el catálogo importado, y se muestran dichos campos.
+      - "Stock": muestra el inventario agrupado y oculta campos extras.
+      - "Vademécum": muestra el catálogo importado y se muestran campos extras.
     """
     def __init__(self, master=None):
         super().__init__(master)
         self.title("Control de Stock")
         self.resizable(False, False)
         
-        # Configuración de dimensiones y centro de ventana
+        # Configurar dimensiones y centrar la ventana
         window_width = 800
         window_height = 600
         screen_width = self.winfo_screenwidth()
@@ -32,15 +45,15 @@ class StockWindow(ctk.CTkToplevel):
         y = int((screen_height - window_height) / 2)
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
-        # Instanciamos los gestores
+        # Instanciar gestores
         self.stock_manager = StockManager()
         self.vademecum_manager = VademecumManager()
         self.inventario_manager = GestorInventario()
         
-        # Vinculamos el evento para actualizar el stock
+        # Vincular evento para refrescar stock
         self.bind("<<DatosActualizados>>", self.refrescar_stock)
         
-        # --- BUSQUEDA ---
+        # --- Sección de búsqueda ---
         self.frame_busqueda = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_busqueda.pack(fill="x", padx=10, pady=5)
         self.combo_busqueda = ctk.CTkComboBox(
@@ -64,17 +77,15 @@ class StockWindow(ctk.CTkToplevel):
         )
         self.btn_busqueda.pack(side="left", padx=5)
         
-        # --- TABLA ---
+        # --- Sección de tabla ---
         self.frame_tabla = ctk.CTkFrame(self)
         self.frame_tabla.pack(fill="both", expand=True, padx=20, pady=(5, 10))
         
         self.tree = ttk.Treeview(self.frame_tabla, show="headings")
         self.tree.grid(row=0, column=0, sticky="nsew")
-        # Configuración de los tags (colores pastel)
         self.tree.tag_configure("critical", background="#ffcccc", foreground="#660000")
         self.tree.tag_configure("warning", background="#ffffcc", foreground="#666600")
         self.tree.tag_configure("ok", background="#ccffcc", foreground="#006600")
-        
         self.vscrollbar = ctk.CTkScrollbar(self.frame_tabla, orientation="vertical", command=self.tree.yview)
         self.vscrollbar.grid(row=0, column=1, sticky="ns")
         self.hscrollbar = ctk.CTkScrollbar(self.frame_tabla, orientation="horizontal", command=self.tree.xview)
@@ -86,14 +97,12 @@ class StockWindow(ctk.CTkToplevel):
         self.tree.bind("<Double-1>", self.mostrar_detalles)
         self.tree.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
         
-        # --- FORMULARIO ---
+        # --- Sección de formulario ---
         self.frame_form = ctk.CTkFrame(self)
         self.frame_form.pack(fill="x", padx=100, pady=10)
-        # Configure la grilla para centrar los contenidos
         self.frame_form.grid_columnconfigure(0, weight=1)
         self.frame_form.grid_columnconfigure(1, weight=1)
         
-        # Campos que siempre se muestran
         ctk.CTkLabel(self.frame_form, text="Nombre:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
         self.entry_nombre = ctk.CTkEntry(self.frame_form, width=400)
         self.entry_nombre.grid(row=0, column=1, padx=10, pady=5, sticky="w")
@@ -101,7 +110,6 @@ class StockWindow(ctk.CTkToplevel):
         self.entry_precio = ctk.CTkEntry(self.frame_form, width=400)
         self.entry_precio.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         
-        # Estos campos se mostrarán solo en modo "Vademécum"
         self.label_stock = ctk.CTkLabel(self.frame_form, text="Stock:")
         self.frame_stock = ctk.CTkFrame(self.frame_form)
         self.frame_stock.grid_columnconfigure(0, weight=0)
@@ -117,9 +125,15 @@ class StockWindow(ctk.CTkToplevel):
         self.entry_lote = ctk.CTkEntry(self.frame_form, width=400)
         
         self.label_vencimiento = ctk.CTkLabel(self.frame_form, text="Fecha de Vencimiento:")
-        self.entry_vencimiento = DateEntry(self.frame_form, width=18, date_pattern='yyyy-mm-dd')
-        
-        # Posición inicial de estos widgets (modo Vademécum)
+        self.entry_vencimiento = CustomDateEntry(self.frame_form,
+                                                 state="readonly",
+                                                 locale="es_ES",
+                                                 width=18,
+                                                 date_pattern="yyyy-mm-dd",
+                                                 background="lightblue",
+                                                 foreground="black",
+                                                 bordercolor="red")
+        # Posicionar estos widgets (modo Vademécum)
         self.label_stock.grid(row=2, column=0, padx=10, pady=5, sticky="e")
         self.frame_stock.grid(row=2, column=1, padx=10, pady=5, sticky="w")
         self.label_lote.grid(row=3, column=0, padx=10, pady=5, sticky="e")
@@ -127,10 +141,9 @@ class StockWindow(ctk.CTkToplevel):
         self.label_vencimiento.grid(row=4, column=0, padx=10, pady=5, sticky="e")
         self.entry_vencimiento.grid(row=4, column=1, padx=10, pady=5, sticky="w")
         
-        # Contenedor de botones CRUD centrado
+        # Contenedor de botones CRUD
         self.frame_btns = ctk.CTkFrame(self.frame_form, fg_color="#2E2E2E")
         self.frame_btns.grid(row=5, column=0, columnspan=2, pady=(10, 0), sticky="ew")
-        # Configurar columnas para centrar los botones
         self.frame_btns.grid_columnconfigure(0, weight=1)
         self.frame_btns.grid_columnconfigure(1, weight=1)
         self.frame_btns.grid_columnconfigure(2, weight=1)
@@ -156,7 +169,6 @@ class StockWindow(ctk.CTkToplevel):
             columns = ("ID", "Nombre", "Precio", "Stock", "Disponibilidad", "Vencimiento", "Detalle")
             self.btn_modificar.configure(state="normal")
             self.btn_eliminar.configure(state="normal")
-            # Ocultar campos extras en el formulario
             self.label_stock.grid_remove()
             self.frame_stock.grid_remove()
             self.label_lote.grid_remove()
@@ -167,7 +179,6 @@ class StockWindow(ctk.CTkToplevel):
             columns = ("Nombre Comercial", "Presentación", "Acción Farmacológica", "Principio Activo", "Laboratorio")
             self.btn_modificar.configure(state="disabled")
             self.btn_eliminar.configure(state="disabled")
-            # Mostrar campos extras en el formulario
             self.label_stock.grid(row=2, column=0, padx=10, pady=5, sticky="e")
             self.frame_stock.grid(row=2, column=1, padx=10, pady=5, sticky="w")
             self.label_lote.grid(row=3, column=0, padx=10, pady=5, sticky="e")
@@ -312,7 +323,6 @@ class StockWindow(ctk.CTkToplevel):
                 self.entry_nombre.insert(0, values[1])
                 self.entry_precio.delete(0, "end")
                 self.entry_precio.insert(0, values[2])
-                # En modo Stock, estos campos están ocultos, no se rellenan
             else:
                 self.entry_nombre.delete(0, "end")
                 self.entry_nombre.insert(0, values[0])
@@ -339,7 +349,6 @@ class StockWindow(ctk.CTkToplevel):
         self.entry_stock.delete(0, "end")
         self.entry_stock.insert(0, new_stock)
     
-    # Método agregar actualizado para forzar el modo "Stock" tras agregar producto.
     def agregar(self):
         nombre = self.entry_nombre.get().strip()
         precio_text = self.entry_precio.get().strip()
@@ -368,7 +377,6 @@ class StockWindow(ctk.CTkToplevel):
 
         if self.stock_manager.agregar_o_actualizar_producto(producto):
             messagebox.showinfo("Éxito", "Producto agregado/actualizado correctamente.")
-            # Forzamos que el modo sea "Stock"
             self.combo_busqueda.set("Stock")
             self.cambiar_origen("Stock")
             self.cargar_productos()
