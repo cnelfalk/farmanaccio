@@ -16,13 +16,16 @@ class GestorInventario:
             return ("Preocupante", "yellow")
         else:
             return ("Razonable", "green")
-    
+        
     def obtener_inventario_agrupado(self) -> list:
         """
         Retorna un resumen del inventario agrupado por producto a partir de la tabla lotes_productos,
         para productos activos, y añade dos nuevos campos:
-          - estado: el texto descriptivo (“Crítico”, “Preocupante” o “Razonable”)
-          - bg_color: el color de fondo a usar.
+          - total_stock: la suma de las cantidades disponibles (aunque sea 0)
+          - vencimiento_proximo: la fecha mínima de vencimiento asociada.
+          
+        Se eliminó el filtro que restringía a lotes con cantidad_disponible > 0,
+        de forma que los productos que hayan agotado todo su stock se muestren con total_stock = 0.
         """
         inventario = []
         try:
@@ -36,11 +39,11 @@ class GestorInventario:
                     p.prodId, 
                     p.nombre, 
                     p.precio,
-                    SUM(l.cantidad_disponible) AS total_stock,
+                    IFNULL(SUM(l.cantidad_disponible), 0) AS total_stock,
                     MIN(l.vencimiento) AS vencimiento_proximo
                 FROM productos p
                 JOIN lotes_productos l ON p.prodId = l.prodId
-                WHERE p.activo = 1 AND l.cantidad_disponible > 0
+                WHERE p.activo = 1
                 GROUP BY p.prodId, p.nombre, p.precio
             """
             cursor.execute(sql)
@@ -57,12 +60,28 @@ class GestorInventario:
         return inventario
 
     def obtener_detalles_generales_producto(self, nombre_producto: str) -> dict:
+        """
+        Retorna un diccionario con los detalles generales del producto a partir del
+        vademécum, basado en la columna 'nombreComercial'.
+        
+        Los detalles incluyen:
+          - presentacion
+          - accionFarmacologica
+          - principioActivo
+          - laboratorio
+          
+        Si no se encuentra el producto, se devuelven valores por defecto.
+        """
         detalles = {}
         try:
             conexion = ConexionBD.obtener_conexion()
             if not conexion:
-                return {"presentacion": "No Disponible", "accionFarmacologica": "No Disponible",
-                        "principioActivo": "No Disponible", "laboratorio": "No Disponible"}
+                return {
+                    "presentacion": "No Disponible", 
+                    "accionFarmacologica": "No Disponible",
+                    "principioActivo": "No Disponible", 
+                    "laboratorio": "No Disponible"
+                }
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
             sql = """
@@ -76,16 +95,29 @@ class GestorInventario:
             if resultado:
                 detalles = resultado
             else:
-                detalles = {"presentacion": "No Disponible", "accionFarmacologica": "No Disponible",
-                            "principioActivo": "No Disponible", "laboratorio": "No Disponible"}
+                detalles = {
+                    "presentacion": "No Disponible", 
+                    "accionFarmacologica": "No Disponible",
+                    "principioActivo": "No Disponible", 
+                    "laboratorio": "No Disponible"
+                }
             cursor.close()
             conexion.close()
         except Exception as e:
-            detalles = {"presentacion": "No Disponible", "accionFarmacologica": "No Disponible",
-                        "principioActivo": "No Disponible", "laboratorio": "No Disponible"}
+            detalles = {
+                "presentacion": "No Disponible",
+                "accionFarmacologica": "No Disponible",
+                "principioActivo": "No Disponible",
+                "laboratorio": "No Disponible"
+            }
         return detalles
 
     def obtener_detalle_lotes(self, prodId: int) -> list:
+        """
+        Retorna la lista de lotes asociados a un producto, ordenados por vencimiento.
+        Cada lote se retorna como un diccionario con las columnas:
+        loteID, numeroLote, fechaIngreso, vencimiento, cantidad_ingresada y cantidad_disponible.
+        """
         detalles = []
         try:
             conexion = ConexionBD.obtener_conexion()
@@ -115,5 +147,8 @@ if __name__ == "__main__":
     
     if inventario:
         prod_id = inventario[0]["prodId"]
-        detalle = gestor.obtener_detalle_lotes(prod_id)
-        print(f"Detalle de lotes para prodId {prod_id}:", detalle)
+        # Suponiendo que el nombre del producto corresponde al 'nombreComercial'
+        detalles_generales = gestor.obtener_detalles_generales_producto(inventario[0]["nombre"])
+        print("Detalles generales del producto:", detalles_generales)
+        detalle_lotes = gestor.obtener_detalle_lotes(prod_id)
+        print(f"Detalle de lotes para prodId {prod_id}:", detalle_lotes)

@@ -4,11 +4,9 @@ from mysql.connector import Error
 
 class TablaCreator:
     """
-    Clase encargada de crear la base de datos 'farmanaccio_db' y sus tablas asociadas.
-    
-    Crea:
-      - La base de datos (si no existe).
-      - Tablas: vademecum, productos, lotes_productos, usuarios, clientes, facturas y factura_detalles.
+    Crea la base de datos 'farmanaccio_db' y sus tablas: 
+      - vademecum, productos, lotes_productos, usuarios, clientes, facturas, factura_detalles,
+      - Remito y RemitoDetalle.
     """
     def crear_base_de_datos_y_tablas(self):
         try:
@@ -72,7 +70,7 @@ class TablaCreator:
             """
             cursor.execute(sentencia_usuarios)
 
-            # Tabla clientes con campo IVA vacío por defecto
+            # Tabla clientes (se modifica para que 'cuil' y 'iva' sean UNIQUE)
             sentencia_clientes = """
                 CREATE TABLE IF NOT EXISTS clientes (
                     clienteId INT AUTO_INCREMENT PRIMARY KEY,
@@ -82,7 +80,7 @@ class TablaCreator:
                     telefono VARCHAR(20),
                     email VARCHAR(100),
                     direccion VARCHAR(150),
-                    iva VARCHAR(50) NOT NULL DEFAULT ''
+                    iva VARCHAR(50) NOT NULL DEFAULT '' UNIQUE
                 )
             """
             cursor.execute(sentencia_clientes)
@@ -112,6 +110,34 @@ class TablaCreator:
                 )
             """
             cursor.execute(sentencia_factura_detalles)
+
+            # NUEVAS TABLAS PARA REMITO:
+            # Tabla Remito: los campos cuit_cuil e ivaEstado referencian a clientes(cuil) y clientes(iva)
+            sentencia_remito = """
+                CREATE TABLE IF NOT EXISTS Remito (
+                    remitoID INT AUTO_INCREMENT PRIMARY KEY,
+                    clienteID INT,
+                    cuit_cuil VARCHAR(20),
+                    ivaEstado VARCHAR(50),
+                    fechaInicio DATE,
+                    vencimientoRemito DATE,
+                    FOREIGN KEY (clienteID) REFERENCES clientes(clienteId)
+                )
+            """
+            cursor.execute(sentencia_remito)
+
+            # Tabla RemitoDetalle
+            sentencia_remito_detalle = """
+                CREATE TABLE IF NOT EXISTS RemitoDetalle (
+                    remitoDetalleID INT AUTO_INCREMENT PRIMARY KEY,
+                    remitoID INT,
+                    prodID INT,
+                    cantidad INT,
+                    FOREIGN KEY (remitoID) REFERENCES Remito(remitoID),
+                    FOREIGN KEY (prodID) REFERENCES productos(prodId)
+                )
+            """
+            cursor.execute(sentencia_remito_detalle)
 
             # Insertar usuario administrador por defecto si no existe.
             cursor.execute("SELECT * FROM usuarios WHERE usuario='admin'")

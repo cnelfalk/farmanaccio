@@ -6,6 +6,48 @@ from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
 from utils.utilidades import Utilidades
 
+# --- Nueva clase para preguntar por el precio ---
+class PrecioOptionDialog(ctk.CTkToplevel):
+    """
+    Diálogo modal con tres opciones: "Atrás", "Actualizar" y "Mantener".
+    Se usa cuando, para un producto ya existente, el precio ingresado es distinto
+    al precio actual registrado en la base de datos.
+    """
+    def __init__(self, parent, nombre_producto, precio_actual, precio_nuevo):
+        super().__init__(parent)
+        self.title("Conflicto de Precio")
+        self.result = None
+        self.grab_set()
+        self.resizable(False, False)
+        self.geometry("400x200")
+
+        mensaje = (
+            f"El producto '{nombre_producto}' ya existe con precio {precio_actual}.\n"
+            f"El nuevo precio ingresado es {precio_nuevo}.\n\n"
+            "¿Desea actualizar el precio a la nueva cifra o mantener el precio vigente?"
+        )
+        ctk.CTkLabel(self, text=mensaje, wraplength=380, justify="center").pack(padx=10, pady=20)
+
+        frame_buttons = ctk.CTkFrame(self)
+        frame_buttons.pack(pady=10)
+
+        btn_atras = ctk.CTkButton(frame_buttons, text="Atrás", command=lambda: self._cerrar("atras"))
+        btn_atras.grid(row=0, column=0, padx=5)
+
+        btn_actualizar = ctk.CTkButton(frame_buttons, text="Actualizar", command=lambda: self._cerrar("actualizar"))
+        btn_actualizar.grid(row=0, column=1, padx=5)
+
+        btn_mantener = ctk.CTkButton(frame_buttons, text="Mantener", command=lambda: self._cerrar("mantener"))
+        btn_mantener.grid(row=0, column=2, padx=5)
+
+        self.protocol("WM_DELETE_WINDOW", lambda: self._cerrar("atras"))
+        self.wait_window()
+
+    def _cerrar(self, resultado):
+        self.result = resultado
+        self.destroy()
+
+
 class TripleOptionDialog(ctk.CTkToplevel):
     """
     Diálogo modal con tres opciones: "Atrás", "Actualizar" y "Continuar".
@@ -81,18 +123,42 @@ class StockManager:
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
             # Buscar si existe un producto (ignorando mayúsculas)
-            sql_busqueda = "SELECT prodId, stock, activo FROM productos WHERE LOWER(nombre) = LOWER(%s)"
+            sql_busqueda = "SELECT prodId, stock, activo, precio FROM productos WHERE LOWER(nombre) = LOWER(%s)"
             cursor.execute(sql_busqueda, (producto["nombre"],))
             resultado = cursor.fetchone()
             nuevo_stock = producto["stock"]
             if resultado:
                 prodId = resultado["prodId"]
                 if resultado["activo"] == 1:
-                    # Producto activo: sumar stock
                     stock_actual = resultado["stock"]
                     nuevo_stock = stock_actual + producto["stock"]
+
+                    # Verificar conflicto de precio
+                    new_price = producto["precio"]
+                    if float(new_price) != float(resultado["precio"]):
+                        # Prepara el diálogo para decidir qué hacer con el precio
+                        from tkinter import Tk
+                        try:
+                            if Tk._default_root is None:
+                                root = Tk()
+                                root.withdraw()
+                            else:
+                                root = Tk._default_root
+                        except Exception:
+                            root = None
+                        dialog = PrecioOptionDialog(root, producto["nombre"], resultado["precio"], new_price)
+                        opcion = dialog.result
+                        if opcion is None or opcion == "atras":
+                            cursor.close()
+                            conexion.close()
+                            return False
+                        elif opcion == "actualizar":
+                            new_price = new_price  # se usará el precio nuevo
+                        elif opcion == "mantener":
+                            new_price = resultado["precio"]
+
                     sql_update = "UPDATE productos SET stock = %s, precio = %s WHERE prodId = %s"
-                    cursor.execute(sql_update, (nuevo_stock, producto["precio"], prodId))
+                    cursor.execute(sql_update, (nuevo_stock, new_price, prodId))
                 else:
                     confirmacion = messagebox.askyesno(
                         "Reactivar producto",
@@ -124,68 +190,70 @@ class StockManager:
             cantidad = producto["stock"]
             nuevo_vencimiento = producto.get("vencimiento", None)
             if registro_lote:
-                vencimiento_existente = registro_lote["vencimiento"]
-                if isinstance(vencimiento_existente, (datetime.date, datetime.datetime)):
-                    vencimiento_existente_str = vencimiento_existente.isoformat()
-                else:
-                    vencimiento_existente_str = str(vencimiento_existente)
-            else:
-                vencimiento_existente_str = None
-            nuevo_vencimiento_str = str(nuevo_vencimiento)
-            if registro_lote:
-                if nuevo_vencimiento_str != vencimiento_existente_str:
-                    mensaje_conflicto = (
-                        f"El lote '{lote_valor}' ya existe con vencimiento {vencimiento_existente_str}.\n\n"
-                        f"¿Deseas actualizar la fecha de vencimiento a la nueva ingresada ({nuevo_vencimiento_str}) "
-                        "o continuar usando la fecha vigente?"
-                    )
-                    try:
+                if nuevo_vencimiento is not None:
+                    if isinstance(registro_lote["vencimiento"], (datetime.date, datetime.datetime)):
+                        vencimiento_existente_str = registro_lote["vencimiento"].isoformat()
+                    else:
+                        vencimiento_existente_str = str(registro_lote["vencimiento"])
+                    nuevo_vencimiento_str = str(nuevo_vencimiento)
+                    if nuevo_vencimiento_str != vencimiento_existente_str:
+                        mensaje_conflicto = (
+                            f"El lote '{lote_valor}' ya existe con vencimiento {vencimiento_existente_str}.\n\n"
+                            f"¿Deseas actualizar la fecha de vencimiento a la nueva ingresada ({nuevo_vencimiento_str}) "
+                            "o continuar usando la fecha vigente?"
+                        )
                         from tkinter import Tk
-                        if Tk._default_root is None:
-                            root = Tk()
-                            root.withdraw()
-                        else:
-                            root = Tk._default_root
-                    except Exception:
-                        root = None
-                    dialogo = TripleOptionDialog(root, mensaje_conflicto)
-                    opcion = dialogo.result
-                    if opcion == "atras" or opcion is None:
-                        cursor.close()
-                        conexion.close()
-                        return False
-                    elif opcion == "actualizar":
-                        sql_actualiza_lote = """
-                            UPDATE lotes_productos
-                            SET vencimiento = %s,
-                                cantidad_ingresada = cantidad_ingresada + %s,
-                                cantidad_disponible = cantidad_disponible + %s
-                            WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
-                        """
-                        cursor.execute(sql_actualiza_lote, (nuevo_vencimiento_str, cantidad, cantidad, prodId, lote_valor))
-                    elif opcion == "continuar":
-                        sql_actualiza_lote = """
+                        try:
+                            if Tk._default_root is None:
+                                root = Tk()
+                                root.withdraw()
+                            else:
+                                root = Tk._default_root
+                        except Exception:
+                            root = None
+                        dialogo = TripleOptionDialog(root, mensaje_conflicto)
+                        opcion = dialogo.result
+                        if opcion == "atras" or opcion is None:
+                            cursor.close()
+                            conexion.close()
+                            return False
+                        elif opcion == "actualizar":
+                            cursor.execute("""
+                                UPDATE lotes_productos
+                                SET vencimiento = %s,
+                                    cantidad_ingresada = cantidad_ingresada + %s,
+                                    cantidad_disponible = cantidad_disponible + %s
+                                WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
+                            """, (nuevo_vencimiento_str, cantidad, cantidad, prodId, lote_valor))
+                        elif opcion == "continuar":
+                            cursor.execute("""
+                                UPDATE lotes_productos
+                                SET cantidad_ingresada = cantidad_ingresada + %s,
+                                    cantidad_disponible = cantidad_disponible + %s
+                                WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
+                            """, (cantidad, cantidad, prodId, lote_valor))
+                    else:
+                        cursor.execute("""
                             UPDATE lotes_productos
                             SET cantidad_ingresada = cantidad_ingresada + %s,
                                 cantidad_disponible = cantidad_disponible + %s
                             WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
-                        """
-                        cursor.execute(sql_actualiza_lote, (cantidad, cantidad, prodId, lote_valor))
+                        """, (cantidad, cantidad, prodId, lote_valor))
                 else:
-                    sql_actualiza_lote = """
+                    # Si no hay vencimiento (aunque se valida antes) se actualiza solo la cantidad
+                    cursor.execute("""
                         UPDATE lotes_productos
                         SET cantidad_ingresada = cantidad_ingresada + %s,
                             cantidad_disponible = cantidad_disponible + %s
                         WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
-                    """
-                    cursor.execute(sql_actualiza_lote, (cantidad, cantidad, prodId, lote_valor))
+                    """, (cantidad, cantidad, prodId, lote_valor))
             else:
-                sql_insert_lote = """
+                nuevo_vencimiento_str = str(nuevo_vencimiento)
+                cursor.execute("""
                     INSERT INTO lotes_productos
                         (prodId, numeroLote, fechaIngreso, vencimiento, cantidad_ingresada, cantidad_disponible)
                     VALUES (%s, %s, CURDATE(), %s, %s, %s)
-                """
-                cursor.execute(sql_insert_lote, (prodId, lote_valor, nuevo_vencimiento_str, cantidad, cantidad))
+                """, (prodId, lote_valor, nuevo_vencimiento_str, cantidad, cantidad))
             conexion.commit()
             cursor.close()
             conexion.close()
@@ -272,10 +340,10 @@ if __name__ == "__main__":
     }
     producto2 = {
         "nombre": "Ibu",
-        "precio": 1.5,
+        "precio": 2.0,  # Precio distinto para probar el diálogo de conflicto
         "stock": 30,
         "lote": "Lote001",
-        "vencimiento": "2025-07-17"
+        "vencimiento": "2025-04-17"
     }
     print("Agregando producto 1:")
     if stock_manager.agregar_o_actualizar_producto(producto1):

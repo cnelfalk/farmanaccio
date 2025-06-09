@@ -15,6 +15,7 @@ class ClientesWindow(ctk.CTkToplevel):
 
         self.cliente_manager = ClienteManager()
         self.cliente_actual_id = None
+        self.selected_cliente = None  # Nuevo atributo para almacenar el cliente seleccionado
         self.clientes_map = {}  # id → dict
 
         # ─── Búsqueda ──────────────────────────────────────────────────────
@@ -32,42 +33,30 @@ class ClientesWindow(ctk.CTkToplevel):
 
         # ─── Treeview ──────────────────────────────────────────────────────
         self.frame_tree_outer = ctk.CTkFrame(self)
-        self.frame_tree_outer.pack(fill="both", padx=10, pady=10)  # No uses expand=True acá
+        self.frame_tree_outer.pack(fill="both", padx=10, pady=10)
 
         # Frame con altura fija (~130px para 5 filas visibles)
         self.frame_tree = ctk.CTkFrame(self.frame_tree_outer, height=130)
         self.frame_tree.pack(fill="x", padx=10, pady=10, expand=False)
-        self.frame_tree.pack_propagate(False)  # Impide que el frame se expanda para ajustarse a su contenido
+        self.frame_tree.pack_propagate(False)
 
         cols = ("ID", "Nombre", "Apellido", "CUIL", "Teléfono", "Email", "Dirección", "IVA")
-
-        # El parámetro height del Treeview define la cantidad de filas visibles
         self.tree = ttk.Treeview(self.frame_tree, columns=cols, show="headings", height=5)
         for col in cols:
             anchor = "center" if col == "ID" else "w"
             self.tree.heading(col, text=col)
             self.tree.column(col, width=120, anchor=anchor)
-
-        # Usamos grid para ubicar el Treeview dentro del frame
         self.tree.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        # Scrollbars
         vsb = ctk.CTkScrollbar(self.frame_tree, orientation="vertical", command=self.tree.yview)
         vsb.grid(row=0, column=1, sticky="ns", pady=10)
         hsb = ctk.CTkScrollbar(self.frame_tree, orientation="horizontal", command=self.tree.xview)
         hsb.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10)
-
-        # Conexión scrollbars
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-
-        # No permitir expansión vertical
-        # (ya que la altura está fija, no necesitamos weight=1)
         self.frame_tree.rowconfigure(0, weight=0)
         self.frame_tree.columnconfigure(0, weight=1)
 
-        # Evento de selección
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
-
 
         # ─── Formulario ────────────────────────────────────────────────────
         self.frame_form = ctk.CTkFrame(self)
@@ -83,29 +72,24 @@ class ClientesWindow(ctk.CTkToplevel):
         ]
         self.entries = {}
         for i, (key, label) in enumerate(fields):
-            ctk.CTkLabel(self.frame_form, text=f"{label}:")\
-                .grid(row=i, column=0, sticky="e", padx=5, pady=5)
+            ctk.CTkLabel(self.frame_form, text=f"{label}:").grid(row=i, column=0, sticky="e", padx=5, pady=5)
             ent = ctk.CTkEntry(self.frame_form)
             ent.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
             self.entries[key] = ent
         self.frame_form.grid_columnconfigure(1, weight=1)
 
-        # Agrupar el Label y el ComboBox de IVA en un frame nuevo para centrarlos
         row_iva = len(fields)
         iva_frame = ctk.CTkFrame(self.frame_form, fg_color="#304C27")
         iva_frame.grid(row=row_iva, column=0, columnspan=2, pady=5)
-        # Configuramos el frame para que sus widgets se centren
         iva_frame.grid_columnconfigure(0, weight=1)
 
-        # Creación y empaquetado de los widgets dentro del iva_frame
         iva_label = ctk.CTkLabel(iva_frame, text="IVA:")
         iva_label.pack(side="left", padx=5)
         opciones_iva = ["Exento", "Monotributo", "Resp. Insc.", "Eventual", "Cons. Final"]
         self.combobox_iva = ctk.CTkComboBox(iva_frame, values=opciones_iva, state="readonly", width=100)
-        self.combobox_iva.set("")  # Valor por defecto vacío
+        self.combobox_iva.set("")
         self.combobox_iva.pack(side="left", padx=5)
 
-        # ─── Botones CRUD ──────────────────────────────────────────────────
         self.frame_btns = ctk.CTkFrame(self.frame_form, fg_color="transparent")
         self.frame_btns.grid(row=row_iva+1, column=0, columnspan=2, pady=10)
 
@@ -121,8 +105,6 @@ class ClientesWindow(ctk.CTkToplevel):
         self.btn_volver.pack(pady=(0, 12))
 
         self.after(150, lambda: self.iconbitmap(icono_logotipo))
-
-        # Carga inicial
         self._cargar_clientes()
 
     def _cargar_clientes(self):
@@ -164,6 +146,7 @@ class ClientesWindow(ctk.CTkToplevel):
 
     def _reset_form(self):
         self.cliente_actual_id = None
+        self.selected_cliente = None  # Reiniciamos la selección
         for ent in self.entries.values():
             ent.delete(0, tk.END)
         self.combobox_iva.set("")
@@ -177,25 +160,23 @@ class ClientesWindow(ctk.CTkToplevel):
             return
         cid = int(self.tree.item(sel[0], "values")[0])
         c = self.clientes_map[cid]
+        # Actualizamos el formulario
         for k in self.entries:
             self.entries[k].delete(0, tk.END)
             self.entries[k].insert(0, c.get(k, ""))
         self.combobox_iva.set(c.get("iva", ""))
         self.cliente_actual_id = cid
+        self.selected_cliente = c  # Guardamos el cliente seleccionado
         self.btn_agregar.configure(state="disabled")
         self.btn_modificar.configure(state="normal")
         self.btn_eliminar.configure(state="normal")
 
-    def _validar(self):
+    def _agregar(self):
         if not (self.entries["nombre"].get().strip() and
                 self.entries["apellido"].get().strip() and
                 self.entries["cuil"].get().strip()):
             messagebox.showwarning("Atención", "Nombre, Apellido y CUIL son obligatorios.")
-            return False
-        return True
-
-    def _agregar(self):
-        if not self._validar(): return
+            return
         datos = {k: v.get().strip() for k, v in self.entries.items()}
         datos["iva"] = self.combobox_iva.get().strip()
         if self.cliente_manager.crear_cliente(datos):
@@ -205,7 +186,8 @@ class ClientesWindow(ctk.CTkToplevel):
             messagebox.showerror("Error", "No se pudo agregar el cliente.")
 
     def _modificar(self):
-        if self.cliente_actual_id is None or not self._validar(): return
+        if self.cliente_actual_id is None:
+            return
         datos = {k: v.get().strip() for k, v in self.entries.items()}
         datos["iva"] = self.combobox_iva.get().strip()
         if self.cliente_manager.actualizar_cliente(self.cliente_actual_id, datos):
