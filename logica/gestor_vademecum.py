@@ -15,7 +15,7 @@ class VademecumManager:
             if not conexion:
                 return registros
             cursor = conexion.cursor(dictionary=True)
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             cursor.execute("""
                 SELECT vademecumID, nombreComercial, presentacion, 
                        accionFarmacologica, principioActivo, laboratorio 
@@ -39,7 +39,7 @@ class VademecumManager:
             if not conexion:
                 return registros
             cursor = conexion.cursor(dictionary=True)
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             sql = """
                 SELECT vademecumID, nombreComercial, presentacion, 
                        accionFarmacologica, principioActivo, laboratorio 

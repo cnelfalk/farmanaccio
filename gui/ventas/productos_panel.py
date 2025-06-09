@@ -1,7 +1,6 @@
-# gui/ventas/productos_panel.py
-
+# src/gui/ventas/productos_panel.py
 import customtkinter as ctk
-from tkinter import ttk
+from tkinter import ttk, font as tkFont
 
 class PanelProductos(ctk.CTkFrame):
     def __init__(self, master, on_buscar, on_refrescar, on_seleccion, on_agregar, cantidad_var):
@@ -21,22 +20,27 @@ class PanelProductos(ctk.CTkFrame):
         self.entry_search.pack(side="left", fill="x", expand=True, padx=(0, 10))
         ctk.CTkButton(search_frame_inside, text="Buscar", command=on_buscar).pack()
 
-        # Treeview de productos
+        # Treeview de productos (incluyendo la columna "Disponibilidad")
         self.tree_frame = ctk.CTkFrame(self)
         self.tree_frame.pack(padx=5, pady=5, fill="both", expand=True)
 
         self.tree = ttk.Treeview(
             self.tree_frame,
-            columns=("ID", "Producto", "Precio Unit.", "Stock"),
+            columns=("ID", "Producto", "Precio Unit.", "Stock", "Disponibilidad"),
             show="headings"
         )
+        # Define las cabeceras sin abreviaciones y con anchuras ajustadas (inicialmente)
         for col, ancho, anchor in zip(
-            ["ID", "Producto", "Precio Unit.", "Stock"],
-            [50, 200, 100, 100],
-            ["center", "w", "center", "center"]
+            ["ID", "Producto", "Precio Unit.", "Stock", "Disponibilidad"],
+            [50, 200, 100, 100, 120],
+            ["center", "w", "center", "center", "center"]
         ):
             self.tree.heading(col, text=col)
             self.tree.column(col, width=ancho, anchor=anchor)
+        # Configura los tags para colorear las filas (usando tonos pastel)
+        self.tree.tag_configure("critical", background="#ffcccc", foreground="#660000")
+        self.tree.tag_configure("warning", background="#ffffcc", foreground="#666600")
+        self.tree.tag_configure("ok", background="#ccffcc", foreground="#006600")
         self.tree.grid(row=0, column=0, sticky="nsew")
         scrollbar = ctk.CTkScrollbar(self.tree_frame, orientation="vertical", command=self.tree.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
@@ -68,9 +72,16 @@ class PanelProductos(ctk.CTkFrame):
     def cargar_productos(self, productos):
         self.tree.delete(*self.tree.get_children())
         for prod in productos:
-            self.tree.insert("", "end", values=(
-                prod["prodId"], prod["nombre"], prod["precio"], prod["stock"]
+            item = self.tree.insert("", "end", values=(
+                prod["prodId"], prod["nombre"], prod["precio"], prod["stock"], prod["indicador"]
             ))
+            if prod["indicador"] == "Crítico":
+                self.tree.item(item, tags=("critical",))
+            elif prod["indicador"] == "Preocupante":
+                self.tree.item(item, tags=("warning",))
+            else:
+                self.tree.item(item, tags=("ok",))
+        self.ajustar_ancho_columnas()
 
     def obtener_producto_seleccionado(self):
         item = self.tree.focus()
@@ -81,7 +92,8 @@ class PanelProductos(ctk.CTkFrame):
             "prodId": valores[0],
             "nombre": valores[1],
             "precio": float(valores[2]),
-            "stock": int(valores[3])
+            "stock": int(valores[3]),
+            "indicador": valores[4]
         }
 
     def habilitar_controles(self):
@@ -113,3 +125,16 @@ class PanelProductos(ctk.CTkFrame):
         max_stock = producto["stock"] if producto else actual
         if actual < max_stock:
             self.cantidad_var.set(str(actual + 1))
+
+    def ajustar_ancho_columnas(self):
+        # Se obtiene la fuente por defecto del sistema (TkDefaultFont)
+        tree_font = tkFont.nametofont("TkDefaultFont")
+        for col in self.tree["columns"]:
+            max_width = tree_font.measure(col) + 10
+            for item in self.tree.get_children():
+                cell_text = str(self.tree.set(item, col))
+                cell_width = tree_font.measure(cell_text) + 10
+                if cell_width > max_width:
+                    max_width = cell_width
+            self.tree.column(col, width=max_width)
+

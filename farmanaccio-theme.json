@@ -49,8 +49,8 @@
       "border_width": 2,
       "fg_color": "#F9F9FA",
       "border_color": "#979DA2",
-      "button_color": "#9D47C1",
-      "button_hover_color": "#3E2789",
+      "button_color": "#493227",
+      "button_hover_color": "#825946",
       "text_color": "black",
       "text_color_disabled": ["gray74", "gray60"]
     },

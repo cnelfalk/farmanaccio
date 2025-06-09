@@ -1,33 +1,29 @@
 # src/gui/stock_window.py
 import customtkinter as ctk
 from gui.login import icono_logotipo
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, font as tkFont
 from tkcalendar import DateEntry
 from utils.utilidades import Utilidades
 from logica.gestor_vademecum import VademecumManager
 from logica.gestor_stock import StockManager
 from logica.gestor_inventario import GestorInventario  # Para inventario agrupado y detalles de lotes.
-from gui.detalle_lotes import DetalleLotesWindow  # Ventana para ver detalle de lotes.
+from gui.detalle_lotes import DetalleLotesWindow
+import datetime
 
 class StockWindow(ctk.CTkToplevel):
     """
     Ventana para el control de stock.
-    
     Permite elegir entre dos modos:
-      - "Stock": muestra el inventario agrupado a partir del GestorInventario, con las columnas:
-          ID, Nombre, Precio, Stock, Vencimiento y Detalle.
-        En esta vista se muestra el texto "Ver Detalle" en la columna "Detalle".
-        Al hacer doble clic sobre esa columna se abre la ventana de detalle de lotes.
-        
-      - "Vademécum": muestra el catálogo importado. En este modo se desactivan los botones
-        de "Modificar Producto" y "Eliminar Producto".
+      - "Stock": muestra el inventario agrupado; en este modo se ocultan los campos de 
+                 "Stock", "Lote" y "Fecha de Vencimiento" en el formulario.
+      - "Vademécum": muestra el catálogo importado, y se muestran dichos campos.
     """
     def __init__(self, master=None):
         super().__init__(master)
         self.title("Control de Stock")
         self.resizable(False, False)
         
-        # Dimensiones y centrado
+        # Configuración de dimensiones y centro de ventana
         window_width = 800
         window_height = 600
         screen_width = self.winfo_screenwidth()
@@ -36,40 +32,53 @@ class StockWindow(ctk.CTkToplevel):
         y = int((screen_height - window_height) / 2)
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
-        # Gestores
+        # Instanciamos los gestores
         self.stock_manager = StockManager()
         self.vademecum_manager = VademecumManager()
         self.inventario_manager = GestorInventario()
         
-        # -------------------- Área de Búsqueda --------------------
+        # Vinculamos el evento para actualizar el stock
+        self.bind("<<DatosActualizados>>", self.refrescar_stock)
+        
+        # --- BUSQUEDA ---
         self.frame_busqueda = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_busqueda.pack(fill="x", padx=10, pady=5)
-        self.combo_busqueda = ctk.CTkComboBox(self.frame_busqueda,
-                                              values=["Stock", "Vademécum"],
-                                              width=120,
-                                              command=lambda origen: self.cambiar_origen(origen))
+        self.combo_busqueda = ctk.CTkComboBox(
+            self.frame_busqueda,
+            values=["Stock", "Vademécum"],
+            width=120,
+            command=lambda origen: self.cambiar_origen(origen)
+        )
         self.combo_busqueda.set("Stock")
         self.combo_busqueda.pack(side="left", padx=5)
-        self.entry_busqueda = ctk.CTkEntry(self.frame_busqueda,
-                                          width=400,
-                                          placeholder_text="Buscar producto...")
+        self.entry_busqueda = ctk.CTkEntry(
+            self.frame_busqueda,
+            width=400,
+            placeholder_text="Buscar producto..."
+        )
         self.entry_busqueda.pack(side="left", padx=(0, 5))
-        self.btn_busqueda = ctk.CTkButton(self.frame_busqueda, text="Buscar", command=self.buscar_productos)
+        self.btn_busqueda = ctk.CTkButton(
+            self.frame_busqueda,
+            text="Buscar",
+            command=self.buscar_productos
+        )
         self.btn_busqueda.pack(side="left", padx=5)
         
-        # -------------------- Área del TreeView (usando grid y show="headings") --------------------
+        # --- TABLA ---
         self.frame_tabla = ctk.CTkFrame(self)
         self.frame_tabla.pack(fill="both", expand=True, padx=20, pady=(5, 10))
         
         self.tree = ttk.Treeview(self.frame_tabla, show="headings")
         self.tree.grid(row=0, column=0, sticky="nsew")
+        # Configuración de los tags (colores pastel)
+        self.tree.tag_configure("critical", background="#ffcccc", foreground="#660000")
+        self.tree.tag_configure("warning", background="#ffffcc", foreground="#666600")
+        self.tree.tag_configure("ok", background="#ccffcc", foreground="#006600")
         
         self.vscrollbar = ctk.CTkScrollbar(self.frame_tabla, orientation="vertical", command=self.tree.yview)
         self.vscrollbar.grid(row=0, column=1, sticky="ns")
-        
         self.hscrollbar = ctk.CTkScrollbar(self.frame_tabla, orientation="horizontal", command=self.tree.xview)
         self.hscrollbar.grid(row=1, column=0, columnspan=2, sticky="ew")
-        
         self.tree.configure(yscrollcommand=self.vscrollbar.set, xscrollcommand=self.hscrollbar.set)
         self.frame_tabla.rowconfigure(0, weight=1)
         self.frame_tabla.columnconfigure(0, weight=1)
@@ -77,73 +86,105 @@ class StockWindow(ctk.CTkToplevel):
         self.tree.bind("<Double-1>", self.mostrar_detalles)
         self.tree.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
         
-        # -------------------- Formulario de Edición --------------------
+        # --- FORMULARIO ---
         self.frame_form = ctk.CTkFrame(self)
         self.frame_form.pack(fill="x", padx=100, pady=10)
-        ctk.CTkLabel(self.frame_form, text="Nombre:").grid(row=0, column=0, padx=10, pady=5)
-        self.entry_nombre = ctk.CTkEntry(self.frame_form, width=400)
-        self.entry_nombre.grid(row=0, column=1, padx=5, pady=5)
-        ctk.CTkLabel(self.frame_form, text="Precio:").grid(row=1, column=0, padx=10, pady=5)
-        self.entry_precio = ctk.CTkEntry(self.frame_form, width=400)
-        self.entry_precio.grid(row=1, column=1, padx=5, pady=5)
-        ctk.CTkLabel(self.frame_form, text="Stock:").grid(row=2, column=0, padx=10, pady=5)
-        self.frame_stock = ctk.CTkFrame(self.frame_form)
-        self.frame_stock.grid(row=2, column=1, padx=5, pady=5)
-        self.btn_decrementar = ctk.CTkButton(self.frame_stock, text="-", width=30, command=self.decrementar_stock)
-        self.btn_decrementar.pack(side="left")
-        self.entry_stock = ctk.CTkEntry(self.frame_stock, width=250)
-        self.entry_stock.pack(side="left")
-        self.btn_incrementar = ctk.CTkButton(self.frame_stock, text="+", width=30, command=self.incrementar_stock)
-        self.btn_incrementar.pack(side="left")
-        ctk.CTkLabel(self.frame_form, text="Lote:").grid(row=3, column=0, padx=10, pady=5)
-        self.entry_lote = ctk.CTkEntry(self.frame_form, width=400)
-        self.entry_lote.grid(row=3, column=1, padx=5, pady=5)
-        ctk.CTkLabel(self.frame_form, text="Fecha de Vencimiento:").grid(row=4, column=0, padx=10, pady=5)
-        self.entry_vencimiento = DateEntry(self.frame_form, width=18, date_pattern='yyyy-mm-dd')
-        self.entry_vencimiento.grid(row=4, column=1, padx=5, pady=5)
+        # Configure la grilla para centrar los contenidos
+        self.frame_form.grid_columnconfigure(0, weight=1)
+        self.frame_form.grid_columnconfigure(1, weight=1)
         
-        # -------------------- Botones de Acción --------------------
+        # Campos que siempre se muestran
+        ctk.CTkLabel(self.frame_form, text="Nombre:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+        self.entry_nombre = ctk.CTkEntry(self.frame_form, width=400)
+        self.entry_nombre.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+        ctk.CTkLabel(self.frame_form, text="Precio:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
+        self.entry_precio = ctk.CTkEntry(self.frame_form, width=400)
+        self.entry_precio.grid(row=1, column=1, padx=10, pady=5, sticky="w")
+        
+        # Estos campos se mostrarán solo en modo "Vademécum"
+        self.label_stock = ctk.CTkLabel(self.frame_form, text="Stock:")
+        self.frame_stock = ctk.CTkFrame(self.frame_form)
+        self.frame_stock.grid_columnconfigure(0, weight=0)
+        self.frame_stock.grid_columnconfigure(1, weight=1)
+        self.btn_decrementar = ctk.CTkButton(self.frame_stock, text="-", width=30, command=self.decrementar_stock)
+        self.btn_decrementar.grid(row=0, column=0, padx=5)
+        self.entry_stock = ctk.CTkEntry(self.frame_stock, width=250)
+        self.entry_stock.grid(row=0, column=1, padx=5)
+        self.btn_incrementar = ctk.CTkButton(self.frame_stock, text="+", width=30, command=self.incrementar_stock)
+        self.btn_incrementar.grid(row=0, column=2, padx=5)
+        
+        self.label_lote = ctk.CTkLabel(self.frame_form, text="Lote:")
+        self.entry_lote = ctk.CTkEntry(self.frame_form, width=400)
+        
+        self.label_vencimiento = ctk.CTkLabel(self.frame_form, text="Fecha de Vencimiento:")
+        self.entry_vencimiento = DateEntry(self.frame_form, width=18, date_pattern='yyyy-mm-dd')
+        
+        # Posición inicial de estos widgets (modo Vademécum)
+        self.label_stock.grid(row=2, column=0, padx=10, pady=5, sticky="e")
+        self.frame_stock.grid(row=2, column=1, padx=10, pady=5, sticky="w")
+        self.label_lote.grid(row=3, column=0, padx=10, pady=5, sticky="e")
+        self.entry_lote.grid(row=3, column=1, padx=10, pady=5, sticky="w")
+        self.label_vencimiento.grid(row=4, column=0, padx=10, pady=5, sticky="e")
+        self.entry_vencimiento.grid(row=4, column=1, padx=10, pady=5, sticky="w")
+        
+        # Contenedor de botones CRUD centrado
         self.frame_btns = ctk.CTkFrame(self.frame_form, fg_color="#2E2E2E")
-        self.frame_btns.grid(row=5, column=0, columnspan=2, pady=10)
+        self.frame_btns.grid(row=5, column=0, columnspan=2, pady=(10, 0), sticky="ew")
+        # Configurar columnas para centrar los botones
+        self.frame_btns.grid_columnconfigure(0, weight=1)
+        self.frame_btns.grid_columnconfigure(1, weight=1)
+        self.frame_btns.grid_columnconfigure(2, weight=1)
+        
         self.btn_agregar = ctk.CTkButton(self.frame_btns, text="Agregar Producto", command=self.agregar)
-        self.btn_agregar.grid(row=0, column=0, padx=5, pady=5)
+        self.btn_agregar.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
         self.btn_modificar = ctk.CTkButton(self.frame_btns, text="Modificar Producto", command=self.modificar)
-        self.btn_modificar.grid(row=0, column=1, padx=5, pady=5)
+        self.btn_modificar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.btn_eliminar = ctk.CTkButton(self.frame_btns, text="Eliminar Producto", command=self.eliminar)
-        self.btn_eliminar.grid(row=0, column=2, padx=5, pady=5)
+        self.btn_eliminar.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        
         self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy)
         self.btn_volver.pack(padx=5, pady=(0,8))
         
-        # Cargar datos iniciales según la selección actual en el ComboBox.
         self.cargar_datos_iniciales()
         self.after(150, lambda: self.iconbitmap(icono_logotipo))
     
+    def refrescar_stock(self, event):
+        self.cargar_productos()
+    
     def cambiar_origen(self, origen):
-        """
-        Configura el TreeView según el origen de los datos:
-          - Si es "Stock", se muestran las columnas:
-                ("ID", "Nombre", "Precio", "Stock", "Vencimiento", "Detalle")
-          - Si es "Vademécum", se usan las columnas correspondientes al catálogo.
-        Además, si se selecciona "Vademécum", se deshabilitan automáticamente 
-        los botones "Modificar Producto" y "Eliminar Producto".
-        """
         if origen == "Stock":
-            columns = ("ID", "Nombre", "Precio", "Stock", "Vencimiento", "Detalle")
+            columns = ("ID", "Nombre", "Precio", "Stock", "Disponibilidad", "Vencimiento", "Detalle")
             self.btn_modificar.configure(state="normal")
             self.btn_eliminar.configure(state="normal")
+            # Ocultar campos extras en el formulario
+            self.label_stock.grid_remove()
+            self.frame_stock.grid_remove()
+            self.label_lote.grid_remove()
+            self.entry_lote.grid_remove()
+            self.label_vencimiento.grid_remove()
+            self.entry_vencimiento.grid_remove()
         else:
-            columns = ("nombre-comercial", "presentacion", "accion-farmacologica", "principios-activos", "laboratorio")
+            columns = ("Nombre Comercial", "Presentación", "Acción Farmacológica", "Principio Activo", "Laboratorio")
             self.btn_modificar.configure(state="disabled")
             self.btn_eliminar.configure(state="disabled")
+            # Mostrar campos extras en el formulario
+            self.label_stock.grid(row=2, column=0, padx=10, pady=5, sticky="e")
+            self.frame_stock.grid(row=2, column=1, padx=10, pady=5, sticky="w")
+            self.label_lote.grid(row=3, column=0, padx=10, pady=5, sticky="e")
+            self.entry_lote.grid(row=3, column=1, padx=10, pady=5, sticky="w")
+            self.label_vencimiento.grid(row=4, column=0, padx=10, pady=5, sticky="e")
+            self.entry_vencimiento.grid(row=4, column=1, padx=10, pady=5, sticky="w")
         self.tree["columns"] = columns
         for col in columns:
             self.tree.heading(col, text=col)
             if col == "ID":
                 self.tree.column(col, width=50)
-            elif col in ("Nombre", "nombre-comercial"):
+            elif col in ("Nombre", "Nombre Comercial"):
                 self.tree.column(col, width=200)
             elif col in ("Precio", "Stock"):
                 self.tree.column(col, width=100)
+            elif col == "Disponibilidad":
+                self.tree.column(col, width=120, anchor="center")
             else:
                 self.tree.column(col, width=150)
         self.tree.delete(*self.tree.get_children())
@@ -165,119 +206,104 @@ class StockWindow(ctk.CTkToplevel):
                 inventario = [p for p in inventario if termino in p["nombre"].lower()]
             for p in inventario:
                 venc = p.get("vencimiento_proximo") or ""
-                self.tree.insert("", "end", values=(
+                estado = p.get("estado", self.inventario_manager._calcular_estado(p.get("total_stock", 0))[0])
+                item = self.tree.insert("", "end", values=(
                     p["prodId"],
                     p["nombre"],
                     p["precio"],
                     p["total_stock"],
+                    estado,
                     venc,
                     "Ver Detalle"
                 ))
+                if estado == "Crítico":
+                    self.tree.item(item, tags=("critical",))
+                elif estado == "Preocupante":
+                    self.tree.item(item, tags=("warning",))
+                else:
+                    self.tree.item(item, tags=("ok",))
+            self.ajustar_ancho_columnas()
         else:
             registros = self.vademecum_manager.buscar_vademecum(termino)
             for r in registros:
-                self.tree.insert("", "end", values=(
-                    r["nombreComercial"],
-                    r["presentacion"],
-                    r["accionFarmacologica"],
-                    r["principioActivo"],
-                    r["laboratorio"]
-                ))
+                self.tree.insert("", "end", values=(r["nombreComercial"],
+                                                     r["presentacion"],
+                                                     r["accionFarmacologica"],
+                                                     r["principioActivo"],
+                                                     r["laboratorio"]))
+            self.ajustar_ancho_columnas()
     
     def cargar_productos(self):
         self.tree.delete(*self.tree.get_children())
         inventario = self.inventario_manager.obtener_inventario_agrupado()
         for p in inventario:
             venc = p.get("vencimiento_proximo") or ""
-            self.tree.insert("", "end", values=(
+            estado = p.get("estado", self.inventario_manager._calcular_estado(p.get("total_stock", 0))[0])
+            item = self.tree.insert("", "end", values=(
                 p["prodId"],
                 p["nombre"],
                 p["precio"],
                 p["total_stock"],
+                estado,
                 venc,
                 "Ver Detalle"
             ))
+            if estado == "Crítico":
+                self.tree.item(item, tags=("critical",))
+            elif estado == "Preocupante":
+                self.tree.item(item, tags=("warning",))
+            else:
+                self.tree.item(item, tags=("ok",))
+        self.ajustar_ancho_columnas()
     
     def cargar_vademecum(self):
         self.tree.delete(*self.tree.get_children())
         registros = self.vademecum_manager.obtener_vademecum()
         for r in registros:
-            self.tree.insert("", "end", values=(
-                r["nombreComercial"],
-                r["presentacion"],
-                r["accionFarmacologica"],
-                r["principioActivo"],
-                r["laboratorio"]
-            ))
+            self.tree.insert("", "end", values=(r["nombreComercial"],
+                                                 r["presentacion"],
+                                                 r["accionFarmacologica"],
+                                                 r["principioActivo"],
+                                                 r["laboratorio"]))
+        self.ajustar_ancho_columnas()
     
-    def agregar(self):
-        try:
-            producto = {
-                "nombre": self.entry_nombre.get().strip(),
-                "precio": float(self.entry_precio.get()),
-                "stock": int(self.entry_stock.get())
-            }
-            producto["lote"] = self.entry_lote.get().strip()
-            producto["vencimiento"] = self.entry_vencimiento.get()  # DateEntry ya devuelve la fecha formateada.
-        except ValueError:
-            messagebox.showerror("Error", "Precio y Stock deben ser numéricos.", parent=self)
-            return
-        if Utilidades.confirmar_accion(self, "agregar este producto", tipo_usuario="administrador"):
-            if self.stock_manager.agregar_o_actualizar_producto(producto):
-                messagebox.showinfo("Éxito", "Producto agregado/actualizado exitosamente!", parent=self)
-                if self.combo_busqueda.get() == "Stock":
-                    self.cargar_productos()
-                else:
-                    self.cargar_vademecum()
-            else:
-                messagebox.showerror("Error", "No se pudo agregar/actualizar el producto.", parent=self)
+    def ajustar_ancho_columnas(self):
+        tree_font = tkFont.nametofont("TkDefaultFont")
+        for col in self.tree["columns"]:
+            max_width = tree_font.measure(col) + 10
+            for item in self.tree.get_children():
+                cell_text = str(self.tree.set(item, col))
+                cell_width = tree_font.measure(cell_text) + 10
+                if cell_width > max_width:
+                    max_width = cell_width
+            self.tree.column(col, width=max_width)
     
-    def modificar(self):
-        selected_item = self.tree.focus()
-        if not selected_item:
-            messagebox.showerror("Error", "Seleccione un producto para modificar.", parent=self)
-            return
-        values = self.tree.item(selected_item, "values")
-        id_producto = values[0]
-        try:
-            producto_actualizado = {
-                "nombre": self.entry_nombre.get().strip(),
-                "precio": float(self.entry_precio.get()),
-                "stock": int(self.entry_stock.get())
-            }
-            producto_actualizado["lote"] = self.entry_lote.get().strip()
-            producto_actualizado["vencimiento"] = self.entry_vencimiento.get()
-        except ValueError:
-            messagebox.showerror("Error", "Precio y Stock deben ser numéricos.", parent=self)
-            return
-        if Utilidades.confirmar_accion(self, "modificar este producto", tipo_usuario="administrador"):
-            if self.stock_manager.modificar_producto(self, id_producto, producto_actualizado):
-                messagebox.showinfo("Éxito", "Producto modificado exitosamente!", parent=self)
-                if self.combo_busqueda.get() == "Stock":
-                    self.cargar_productos()
-                else:
-                    self.cargar_vademecum()
-            else:
-                messagebox.showerror("Error", "Error al modificar producto.", parent=self)
+    def mostrar_detalles(self, event):
+        item = self.tree.identify_row(event.y)
+        col = self.tree.identify_column(event.x)
+        if item and col == "#7":  # Columna "Detalle"
+            values = self.tree.item(item, "values")
+            prodId = values[0]
+            self.abrir_detalles_producto(prodId, values)
     
-    def eliminar(self):
-        selected_item = self.tree.focus()
-        if not selected_item:
-            messagebox.showerror("Error", "Seleccione un producto para eliminar.", parent=self)
+    def abrir_detalles_producto(self, prodId, valores):
+        detalles_generales = self.inventario_manager.obtener_detalles_generales_producto(valores[1])
+        producto = {
+            "prodId": prodId,
+            "nombre": valores[1],
+            "presentacion": detalles_generales.get("presentacion", "No Disponible"),
+            "accionFarmacologica": detalles_generales.get("accionFarmacologica", "No Disponible"),
+            "principioActivo": detalles_generales.get("principioActivo", "No Disponible"),
+            "laboratorio": detalles_generales.get("laboratorio", "No Disponible")
+        }
+        detalles = self.inventario_manager.obtener_detalle_lotes(prodId)
+        if not detalles:
+            messagebox.showinfo("Detalle", "No se encontraron detalles de lotes para este producto.", parent=self)
             return
-        values = self.tree.item(selected_item, "values")
-        id_producto = values[0]
-        if Utilidades.confirmar_accion(self, "eliminar este producto", tipo_usuario="administrador"):
-            if self.stock_manager.eliminar_producto(id_producto):
-                messagebox.showinfo("Éxito", "Producto eliminado exitosamente!", parent=self)
-                if self.combo_busqueda.get() == "Stock":
-                    self.cargar_productos()
-                else:
-                    self.cargar_vademecum()
-            else:
-                messagebox.showerror("Error", "Error al eliminar producto.", parent=self)
+        from gui.detalle_lotes import DetalleLotesWindow
+        DetalleLotesWindow(self, producto, detalles)
     
-    def cargar_datos_seleccionados(self, event):
+    def cargar_datos_seleccionados(self, _):
         selected_item = self.tree.focus()
         if selected_item:
             values = self.tree.item(selected_item, "values")
@@ -286,11 +312,7 @@ class StockWindow(ctk.CTkToplevel):
                 self.entry_nombre.insert(0, values[1])
                 self.entry_precio.delete(0, "end")
                 self.entry_precio.insert(0, values[2])
-                self.entry_stock.delete(0, "end")
-                self.entry_stock.insert(0, values[3])
-                # En la vista agrupada, no mostramos datos específicos de lote y vencimiento, se limpian.
-                self.entry_lote.delete(0, "end")
-                self.entry_vencimiento.delete(0, "end")
+                # En modo Stock, estos campos están ocultos, no se rellenan
             else:
                 self.entry_nombre.delete(0, "end")
                 self.entry_nombre.insert(0, values[0])
@@ -317,40 +339,84 @@ class StockWindow(ctk.CTkToplevel):
         self.entry_stock.delete(0, "end")
         self.entry_stock.insert(0, new_stock)
     
-    def mostrar_detalles(self, event):
-        """
-        Detecta doble clic en la columna "Detalle" (la sexta columna en modo Stock)
-        y abre la ventana de detalle de lotes para el producto seleccionado.
-        """
-        item = self.tree.identify_row(event.y)
-        col = self.tree.identify_column(event.x)
-        if item and col == "#6":
-            values = self.tree.item(item, "values")
-            prodId = values[0]
-            self.abrir_detalles_producto(prodId, values)
-    
-    def abrir_detalles_producto(self, prodId, valores):
-        """
-        Obtiene la información general extendida del producto (incluyendo presentación,
-        acción farmacológica, principio activo y laboratorio) mediante el GestorInventario,
-        y abre la ventana de detalle de lotes.
-        """
-        detalles_generales = self.inventario_manager.obtener_detalles_generales_producto(valores[1])
-        producto = {
-            "prodId": prodId,
-            "nombre": valores[1],
-            "presentacion": detalles_generales.get("presentacion", "No Disponible"),
-            "accionFarmacologica": detalles_generales.get("accionFarmacologica", "No Disponible"),
-            "principioActivo": detalles_generales.get("principioActivo", "No Disponible"),
-            "laboratorio": detalles_generales.get("laboratorio", "No Disponible")
-        }
-        detalles = self.inventario_manager.obtener_detalle_lotes(prodId)
-        if not detalles:
-            messagebox.showinfo("Detalle", "No se encontraron detalles de lotes para este producto.", parent=self)
-            return
-        DetalleLotesWindow(self, producto, detalles)
+    # Método agregar actualizado para forzar el modo "Stock" tras agregar producto.
+    def agregar(self):
+        nombre = self.entry_nombre.get().strip()
+        precio_text = self.entry_precio.get().strip()
+        stock_text = self.entry_stock.get().strip()
+        lote = self.entry_lote.get().strip()
+        vencimiento = self.entry_vencimiento.get_date().isoformat()
 
-# Ejemplo de uso:
+        if not nombre or not precio_text or not stock_text or not vencimiento:
+            messagebox.showwarning("Campos Vacíos", "Por favor, complete los campos obligatorios.")
+            return
+
+        try:
+            precio = float(precio_text)
+            stock = int(stock_text)
+        except ValueError:
+            messagebox.showerror("Error de Datos", "El precio y el stock deben ser numéricos.")
+            return
+
+        producto = {
+            "nombre": nombre,
+            "precio": precio,
+            "stock": stock,
+            "lote": lote,
+            "vencimiento": vencimiento
+        }
+
+        if self.stock_manager.agregar_o_actualizar_producto(producto):
+            messagebox.showinfo("Éxito", "Producto agregado/actualizado correctamente.")
+            # Forzamos que el modo sea "Stock"
+            self.combo_busqueda.set("Stock")
+            self.cambiar_origen("Stock")
+            self.cargar_productos()
+            self.entry_nombre.delete(0, "end")
+            self.entry_precio.delete(0, "end")
+            self.entry_stock.delete(0, "end")
+            self.entry_lote.delete(0, "end")
+        else:
+            messagebox.showerror("Error", "No se pudo agregar/actualizar el producto.")
+    
+    def modificar(self):
+        selected = self.tree.focus()
+        if not selected:
+            messagebox.showerror("Error", "Por favor, seleccione un producto para modificar.")
+            return
+        product_id = self.tree.item(selected, "values")[0]
+        
+        nombre = self.entry_nombre.get().strip()
+        precio_text = self.entry_precio.get().strip()
+
+        if not nombre or not precio_text:
+            messagebox.showwarning("Campos Vacíos", "Ingrese nombre y precio para modificar.")
+            return
+        try:
+            precio = float(precio_text)
+        except ValueError:
+            messagebox.showerror("Error de Datos", "El precio debe ser numérico.")
+            return
+
+        if self.stock_manager.modificar_producto(self, product_id, {"nombre": nombre, "precio": precio}):
+            messagebox.showinfo("Éxito", "Producto modificado correctamente.")
+            self.cargar_productos()
+        else:
+            messagebox.showerror("Error", "No se pudo modificar el producto.")
+    
+    def eliminar(self):
+        selected = self.tree.focus()
+        if not selected:
+            messagebox.showerror("Error", "Por favor, seleccione un producto para eliminar.")
+            return
+        product_id = self.tree.item(selected, "values")[0]
+        if messagebox.askyesno("Confirmar Eliminación", "¿Está seguro de eliminar este producto?"):
+            if self.stock_manager.eliminar_producto(product_id):
+                messagebox.showinfo("Éxito", "Producto eliminado correctamente.")
+                self.cargar_productos()
+            else:
+                messagebox.showerror("Error", "No se pudo eliminar el producto.")
+
 if __name__ == "__main__":
     app = StockWindow()
     app.mainloop()

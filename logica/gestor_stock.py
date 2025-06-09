@@ -1,23 +1,16 @@
 # src/logica/gestor_stock.py
-from tkinter import messagebox, Tk
+import tkinter.messagebox as messagebox
 import datetime
 import customtkinter as ctk  # Para el diálogo personalizado
 from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
 from utils.utilidades import Utilidades
 
-
 class TripleOptionDialog(ctk.CTkToplevel):
     """
     Diálogo modal con tres opciones: "Atrás", "Actualizar" y "Continuar".
     Se usa cuando, para un producto con el mismo lote y la misma fecha de ingreso,
     el vencimiento ingresado es distinto al vencimiento ya registrado.
-    
-    La respuesta se almacena en self.result:
-      - "atras": se cancela la operación.
-      - "actualizar": se actualizarán todos los registros de ese producto, lote y fecha,
-         modificando el vencimiento al nuevo y sumando stock.
-      - "continuar": se insertará un nuevo registro usando la fecha vigente (la ya registrada).
     """
     def __init__(self, parent, mensaje):
         super().__init__(parent)
@@ -52,31 +45,25 @@ class TripleOptionDialog(ctk.CTkToplevel):
 class StockManager:
     """
     Clase que maneja la lógica para la gestión de productos y lotes.
-
-    Se espera que el diccionario "producto" contenga, además de "nombre", "precio" y "stock",
-    las claves "lote" (identificador del lote) y "vencimiento" (fecha en formato "YYYY-MM-DD").
-
-    Requiere que la tabla "productos" tenga un campo adicional "activo"
-    (1 = activo, 0 = inactivo).
     """
+    def _calcular_indicador(self, stock: int) -> str:
+        """
+        Calcula el indicador basado en el stock:
+         - Menos de 10 → retorna "Crítico"
+         - Entre 10 y 29 → retorna "Preocupante"
+         - 30 o más → retorna "Razonable"
+        """
+        if stock < 10:
+            return "Crítico"
+        elif stock < 30:
+            return "Preocupante"
+        else:
+            return "Razonable"
+
     def agregar_o_actualizar_producto(self, producto) -> bool:
         """
         Agrega o actualiza un producto y registra el lote correspondiente.
-        
-        Primero se verifica si ya existe un producto con ese nombre (sin distinguir mayúsculas):
-          - Si existe y está activo, se actualiza sumándole el nuevo stock.
-          - Si existe pero está inactivo, se pregunta al usuario si desea reactivarlo.
-            En ese caso se actualiza la fila existente, pero se reinicia el stock (la nueva cantidad)
-            para que no se mezclen las cantidades anteriores con la nueva.
-          - Si no existe, se crea un nuevo registro (con activo = 1).
-        
-        Luego se gestiona el registro en la tabla "lotes_productos":
-          Se valida que para ese producto, número de lote y fechaIngreso = CURDATE() se use
-          el registro existente; de lo contrario se inserta uno nuevo. Además, si ya existe un
-          registro para ese grupo y el vencimiento ingresado es distinto al registrado, se muestra
-          el diálogo de triple opción.
-        
-        Retorna True si la operación es exitosa, False en caso contrario.
+        (No se agrega ningún campo en la BD para el indicador; se calcula en tiempo real).
         """
         if producto.get("stock") in (None, ""):
             messagebox.showerror("Error", "El campo 'Stock' es obligatorio.", parent=None)
@@ -92,45 +79,39 @@ class StockManager:
             if not conexion:
                 return False
             cursor = conexion.cursor(dictionary=True)
-            cursor.execute("USE ventas_db")
-
-            # Buscar si existe un producto (sin distinguir mayúsculas), incluyendo la columna "activo"
+            cursor.execute("USE farmanaccio_db")
+            # Buscar si existe un producto (ignorando mayúsculas)
             sql_busqueda = "SELECT prodId, stock, activo FROM productos WHERE LOWER(nombre) = LOWER(%s)"
             cursor.execute(sql_busqueda, (producto["nombre"],))
             resultado = cursor.fetchone()
-
+            nuevo_stock = producto["stock"]
             if resultado:
+                prodId = resultado["prodId"]
                 if resultado["activo"] == 1:
                     # Producto activo: sumar stock
-                    nuevo_stock = resultado["stock"] + producto["stock"]
+                    stock_actual = resultado["stock"]
+                    nuevo_stock = stock_actual + producto["stock"]
                     sql_update = "UPDATE productos SET stock = %s, precio = %s WHERE prodId = %s"
-                    cursor.execute(sql_update, (nuevo_stock, producto["precio"], resultado["prodId"]))
-                    prodId = resultado["prodId"]
+                    cursor.execute(sql_update, (nuevo_stock, producto["precio"], prodId))
                 else:
-                    # Producto inactivo: preguntar si se desea reactivar (no se suma stock a la antigua información).
                     confirmacion = messagebox.askyesno(
                         "Reactivar producto",
                         "Se encontró un registro inactivo para este producto. ¿Deseas reactivarlo y reiniciar el stock con el nuevo valor?",
                         parent=None
                     )
                     if confirmacion:
-                        # Reactivar el producto, estableciendo el nuevo stock (no sumando el antiguo)
                         sql_reactivar = "UPDATE productos SET stock = %s, precio = %s, activo = 1 WHERE prodId = %s"
-                        cursor.execute(sql_reactivar, (producto["stock"], producto["precio"], resultado["prodId"]))
-                        prodId = resultado["prodId"]
+                        cursor.execute(sql_reactivar, (nuevo_stock, producto["precio"], prodId))
                     else:
-                        # Si el usuario decide no reactivar, se inserta un nuevo registro (con un nuevo ID)
                         sql_insert = "INSERT INTO productos (nombre, precio, stock, activo) VALUES (%s, %s, %s, 1)"
-                        cursor.execute(sql_insert, (producto["nombre"], producto["precio"], producto["stock"]))
+                        cursor.execute(sql_insert, (producto["nombre"], producto["precio"], nuevo_stock))
                         prodId = cursor.lastrowid
             else:
-                # No existe; se inserta un nuevo producto (activo)
                 sql_insert = "INSERT INTO productos (nombre, precio, stock, activo) VALUES (%s, %s, %s, 1)"
-                cursor.execute(sql_insert, (producto["nombre"], producto["precio"], producto["stock"]))
+                cursor.execute(sql_insert, (producto["nombre"], producto["precio"], nuevo_stock))
                 prodId = cursor.lastrowid
 
-            # Ahora procesamos la tabla "lotes_productos"
-            # Se verifica si ya existe un registro para este producto, mismo número de lote, y con fechaIngreso = CURDATE()
+            # Procesar la tabla lotes_productos
             lote_valor = producto.get("lote", "")
             sql_verificar_lote = """
                 SELECT loteID, vencimiento, cantidad_ingresada, cantidad_disponible
@@ -140,12 +121,9 @@ class StockManager:
             """
             cursor.execute(sql_verificar_lote, (prodId, lote_valor))
             registro_lote = cursor.fetchone()
-
             cantidad = producto["stock"]
             nuevo_vencimiento = producto.get("vencimiento", None)
-
             if registro_lote:
-                # Convertir el vencimiento registrado a cadena
                 vencimiento_existente = registro_lote["vencimiento"]
                 if isinstance(vencimiento_existente, (datetime.date, datetime.datetime)):
                     vencimiento_existente_str = vencimiento_existente.isoformat()
@@ -153,31 +131,30 @@ class StockManager:
                     vencimiento_existente_str = str(vencimiento_existente)
             else:
                 vencimiento_existente_str = None
-
             nuevo_vencimiento_str = str(nuevo_vencimiento)
-
             if registro_lote:
                 if nuevo_vencimiento_str != vencimiento_existente_str:
-                    # Si las fechas son distintas, se muestra el diálogo de triple opción.
                     mensaje_conflicto = (
                         f"El lote '{lote_valor}' ya existe con vencimiento {vencimiento_existente_str}.\n\n"
                         f"¿Deseas actualizar la fecha de vencimiento a la nueva ingresada ({nuevo_vencimiento_str}) "
                         "o continuar usando la fecha vigente?"
                     )
-                    import tkinter as tk
-                    if tk._default_root is None:
-                        root = tk.Tk()
-                        root.withdraw()
-                    else:
-                        root = tk._default_root
+                    try:
+                        from tkinter import Tk
+                        if Tk._default_root is None:
+                            root = Tk()
+                            root.withdraw()
+                        else:
+                            root = Tk._default_root
+                    except Exception:
+                        root = None
                     dialogo = TripleOptionDialog(root, mensaje_conflicto)
-                    opcion = dialogo.result  # "atras", "actualizar" o "continuar"
+                    opcion = dialogo.result
                     if opcion == "atras" or opcion is None:
                         cursor.close()
                         conexion.close()
                         return False
                     elif opcion == "actualizar":
-                        # Actualizar TODOS los registros para ese producto, lote y fechaIngreso = CURDATE
                         sql_actualiza_lote = """
                             UPDATE lotes_productos
                             SET vencimiento = %s,
@@ -187,7 +164,6 @@ class StockManager:
                         """
                         cursor.execute(sql_actualiza_lote, (nuevo_vencimiento_str, cantidad, cantidad, prodId, lote_valor))
                     elif opcion == "continuar":
-                        # En lugar de insertar una nueva fila (que genera duplicado), actualizamos la existente.
                         sql_actualiza_lote = """
                             UPDATE lotes_productos
                             SET cantidad_ingresada = cantidad_ingresada + %s,
@@ -196,7 +172,6 @@ class StockManager:
                         """
                         cursor.execute(sql_actualiza_lote, (cantidad, cantidad, prodId, lote_valor))
                 else:
-                    # Si las fechas son iguales, se actualiza automáticamente sin diálogo.
                     sql_actualiza_lote = """
                         UPDATE lotes_productos
                         SET cantidad_ingresada = cantidad_ingresada + %s,
@@ -205,66 +180,52 @@ class StockManager:
                     """
                     cursor.execute(sql_actualiza_lote, (cantidad, cantidad, prodId, lote_valor))
             else:
-                # No existe registro para ese lote con fechaIngreso = CURDATE; se inserta uno nuevo.
                 sql_insert_lote = """
                     INSERT INTO lotes_productos
                         (prodId, numeroLote, fechaIngreso, vencimiento, cantidad_ingresada, cantidad_disponible)
                     VALUES (%s, %s, CURDATE(), %s, %s, %s)
                 """
                 cursor.execute(sql_insert_lote, (prodId, lote_valor, nuevo_vencimiento_str, cantidad, cantidad))
-
             conexion.commit()
             cursor.close()
             conexion.close()
             return True
-
         except Error as e:
             messagebox.showerror("Error en agregar/actualizar_producto:", e)
             return False
 
     def obtener_productos(self) -> list:
         """
-        Retorna una lista de productos de la tabla "productos", considerando el stock total.
-        Solo se retornan los productos activos.
+        Retorna una lista de productos de la tabla "productos" consultando los campos existentes.
+        Se añade de forma local el atributo "indicador", calculado a partir del stock.
         """
         productos = []
         try:
             conexion = ConexionBD.obtener_conexion()
             if conexion:
                 cursor = conexion.cursor(dictionary=True)
-                cursor.execute("USE ventas_db")
-                # Solo se retornan productos activos (activo = 1)
+                cursor.execute("USE farmanaccio_db")
                 cursor.execute("SELECT prodId, nombre, precio, stock FROM productos WHERE activo = 1")
                 productos = cursor.fetchall()
                 cursor.close()
                 conexion.close()
+                # Para cada producto, calcular el indicador (sin guardarlo en BD)
+                for prod in productos:
+                    prod["indicador"] = self._calcular_indicador(prod["stock"])
         except Error as e:
             messagebox.showerror("Error al obtener productos:", e)
         return productos
 
-# Parte actualizada en src/logica/gestor_stock.py
-
     def modificar_producto(self, parent, id_producto, producto_actualizado) -> bool:
-        """
-        Modifica los datos generales de un producto en la tabla 'productos'.
-        En esta versión solo se actualizan los campos 'nombre' y 'precio', ya que el stock
-        se calcula al vuelo a partir de los registros en lotes_productos y cualquier modificación
-        de la información del lote (número de lote, cantidad disponible, vencimiento) se gestiona
-        en la ventana detalle de lotes.
-        
-        Se valida que los campos 'nombre' y 'precio' estén completos, ya que son imprescindibles.
-        """
-        # Verificar que 'nombre' y 'precio' no estén vacíos
         if not producto_actualizado.get("nombre") or producto_actualizado.get("precio") is None:
             messagebox.showerror("Error", "Los campos 'nombre' y 'precio' son obligatorios.", parent=parent)
             return False
-        
         try:
             conexion = ConexionBD.obtener_conexion()
             if not conexion:
                 return False
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             sql = "UPDATE productos SET nombre=%s, precio=%s WHERE prodId=%s"
             datos = (
                 producto_actualizado["nombre"],
@@ -281,26 +242,15 @@ class StockManager:
             return False
 
     def eliminar_producto(self, id_producto) -> bool:
-        """
-        Realiza la eliminación lógica del producto:
-        - Actualiza el campo "activo" a 0 en la tabla productos.
-        - Actualiza todos los registros de lotes_productos asociados al producto
-            poniendo 'cantidad_disponible' a 0.
-        Retorna True si la operación es exitosa, False en caso de error.
-        """
         try:
             conexion = ConexionBD.obtener_conexion()
             if conexion:
                 cursor = conexion.cursor()
-                cursor.execute("USE ventas_db")
-                # Eliminación lógica: actualizar activo a 0
+                cursor.execute("USE farmanaccio_db")
                 sql_producto = "UPDATE productos SET activo = 0, stock = 0 WHERE prodId = %s"
                 cursor.execute(sql_producto, (id_producto,))
-
-                # Actualizar los registros de lotes: poner cantidad_disponible en 0.
                 sql_lotes = "UPDATE lotes_productos SET cantidad_disponible = 0 WHERE prodId = %s"
                 cursor.execute(sql_lotes, (id_producto,))
-                
                 conexion.commit()
                 cursor.close()
                 conexion.close()
@@ -309,12 +259,10 @@ class StockManager:
             messagebox.showerror("Error al eliminar producto:", e)
         return False
 
-
 # Ejemplo de uso:
 if __name__ == "__main__":
     stock_manager = StockManager()
 
-    # Ejemplo: Agregar producto "Ibu" con el mismo lote pero con vencimientos distintos.
     producto1 = {
         "nombre": "Ibu",
         "precio": 1.5,

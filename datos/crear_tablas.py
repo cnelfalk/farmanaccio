@@ -4,31 +4,23 @@ from mysql.connector import Error
 
 class TablaCreator:
     """
-    Clase encargada de crear la base de datos 'ventas_db' y sus tablas asociadas.
+    Clase encargada de crear la base de datos 'farmanaccio_db' y sus tablas asociadas.
     
     Crea:
       - La base de datos (si no existe).
-      - Tablas:
-            - vademecum: catálogo de medicamentos,
-            - productos: información general de cada producto, con campo "activo" para eliminación lógica.
-            - lotes_productos: cada entrada (o lote) del producto (para trazabilidad), con UNIQUE (prodId, numeroLote, fechaIngreso)
-            - usuarios, clientes, facturas, y factura_detalles.
-      - Inserción de un usuario administrador por defecto (si no existe).
+      - Tablas: vademecum, productos, lotes_productos, usuarios, clientes, facturas y factura_detalles.
     """
-    
     def crear_base_de_datos_y_tablas(self):
         try:
             conexion = ConexionBD.obtener_conexion()
             if conexion is None:
                 raise Exception("No se pudo establecer la conexión con el servidor SQL.")
-            
             cursor = conexion.cursor()
-            
             # Crear la base de datos si no existe
-            cursor.execute("CREATE DATABASE IF NOT EXISTS ventas_db")
-            cursor.execute("USE ventas_db")
+            cursor.execute("CREATE DATABASE IF NOT EXISTS farmanaccio_db")
+            cursor.execute("USE farmanaccio_db")
 
-            # Crear la tabla vademecum (catálogo importado)
+            # Tabla vademecum
             sentencia_vademecum = """
                 CREATE TABLE IF NOT EXISTS vademecum (
                     vademecumID INT AUTO_INCREMENT PRIMARY KEY,
@@ -40,9 +32,8 @@ class TablaCreator:
                 )
             """
             cursor.execute(sentencia_vademecum)
-            
-            # Crear la tabla de productos (productos generales)
-            # Se agrega la columna "activo" para la eliminación lógica (1=activo, 0=inactivo)
+
+            # Tabla productos
             sentencia_productos = """
                 CREATE TABLE IF NOT EXISTS productos (
                     prodId INT AUTO_INCREMENT PRIMARY KEY,
@@ -50,13 +41,11 @@ class TablaCreator:
                     precio DECIMAL(10,2) NOT NULL,
                     stock INT NOT NULL,
                     activo TINYINT(1) NOT NULL DEFAULT 1
-                    -- La columna 'vencimiento' se gestionará a nivel de lote.
                 )
             """
             cursor.execute(sentencia_productos)
-            
-            # Crear la tabla de lotes_productos (para trazabilidad detallada)
-            # Se agrega una restricción UNIQUE para evitar inserciones duplicadas para un mismo prodId, lote y fechaIngreso.
+
+            # Tabla lotes_productos
             sentencia_lotes = """
                 CREATE TABLE IF NOT EXISTS lotes_productos (
                     loteID INT AUTO_INCREMENT PRIMARY KEY,
@@ -72,7 +61,7 @@ class TablaCreator:
             """
             cursor.execute(sentencia_lotes)
 
-            # Crear la tabla de usuarios
+            # Tabla usuarios
             sentencia_usuarios = """
                 CREATE TABLE IF NOT EXISTS usuarios (
                     userId INT AUTO_INCREMENT PRIMARY KEY,
@@ -82,8 +71,8 @@ class TablaCreator:
                 )
             """
             cursor.execute(sentencia_usuarios)
-            
-            # Crear la tabla de clientes
+
+            # Tabla clientes con campo IVA vacío por defecto
             sentencia_clientes = """
                 CREATE TABLE IF NOT EXISTS clientes (
                     clienteId INT AUTO_INCREMENT PRIMARY KEY,
@@ -92,12 +81,13 @@ class TablaCreator:
                     cuil VARCHAR(20) NOT NULL UNIQUE,
                     telefono VARCHAR(20),
                     email VARCHAR(100),
-                    direccion VARCHAR(150)
+                    direccion VARCHAR(150),
+                    iva VARCHAR(50) NOT NULL DEFAULT ''
                 )
             """
             cursor.execute(sentencia_clientes)
-            
-            # Crear la tabla de facturas
+
+            # Tabla facturas
             sentencia_facturas = """
                 CREATE TABLE IF NOT EXISTS facturas (
                     facturaId INT AUTO_INCREMENT PRIMARY KEY,
@@ -109,8 +99,8 @@ class TablaCreator:
                 )
             """
             cursor.execute(sentencia_facturas)
-            
-            # Crear la tabla de factura_detalles
+
+            # Tabla factura_detalles
             sentencia_factura_detalles = """
                 CREATE TABLE IF NOT EXISTS factura_detalles (
                     facturaDetalleId INT AUTO_INCREMENT PRIMARY KEY,
@@ -122,12 +112,12 @@ class TablaCreator:
                 )
             """
             cursor.execute(sentencia_factura_detalles)
-            
-            # Insertar un usuario administrador por defecto si no existe
+
+            # Insertar usuario administrador por defecto si no existe.
             cursor.execute("SELECT * FROM usuarios WHERE usuario='admin'")
             if cursor.fetchone() is None:
                 cursor.execute("INSERT INTO usuarios (usuario, password, role) VALUES ('admin', 'admin', 'admin')")
-            
+
             conexion.commit()
             cursor.close()
             conexion.close()
@@ -138,6 +128,5 @@ class TablaCreator:
             print("Error:", ex)
 
 if __name__ == "__main__":
-    # Ejecuta la creación de la base de datos y tablas.
     creador = TablaCreator()
     creador.crear_base_de_datos_y_tablas()

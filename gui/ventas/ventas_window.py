@@ -1,4 +1,4 @@
-# gui/ventas/ventas_window.py
+# src/gui/ventas/ventas_window.py
 
 import customtkinter as ctk
 from tkinter import messagebox
@@ -56,6 +56,9 @@ class VentasWindow(ctk.CTkToplevel):
 
         ctk.CTkButton(self, text="Volver", command=self.destroy).pack(pady=5)
 
+        # Vinculación para refrescar productos, usando el widget raíz
+        self.bind("<<DatosActualizados>>", lambda event: self.cargar_productos())
+
         self.cargar_productos()
         self.grab_set()
 
@@ -64,9 +67,11 @@ class VentasWindow(ctk.CTkToplevel):
         self.panel_productos.cargar_productos(productos)
 
     def buscar_productos(self):
-        termino = self.panel_productos.obtener_termino_busqueda()
-        productos = self.stock_manager.buscar_productos(termino)
-        self.panel_productos.cargar_productos(productos)
+        # Se obtiene el término y se filtra la lista de productos
+        termino = self.panel_productos.obtener_termino_busqueda().lower()
+        productos = self.stock_manager.obtener_productos()
+        productos_filtrados = [p for p in productos if termino in p["nombre"].lower()]
+        self.panel_productos.cargar_productos(productos_filtrados)
 
     def seleccionar_producto(self, event=None):
         self.selected_product = self.panel_productos.obtener_producto_seleccionado()
@@ -125,7 +130,8 @@ class VentasWindow(ctk.CTkToplevel):
         if not Utilidades.confirmar_accion(self, "efectuar esta venta", tipo_usuario="usuario"):
             return
 
-        exito, mensaje = self.venta_manager.confirmar_venta(self.controlador_carrito.carrito)
+        # Se pasa self como widget padre para diálogos en confirmar_venta
+        exito, mensaje = self.venta_manager.confirmar_venta(self.controlador_carrito.carrito, parent=self)
         if exito:
             messagebox.showinfo("Éxito", mensaje, parent=self)
             self.cargar_venta()
@@ -141,3 +147,8 @@ class VentasWindow(ctk.CTkToplevel):
             messagebox.showinfo("Venta cargada", "¡Enhorabuena! La venta se ha cargado en la base de datos.", parent=self)
         except Exception as e:
             messagebox.showerror("Error al generar la factura", str(e), parent=self)
+
+# Ejemplo de uso:
+if __name__ == "__main__":
+    app = VentasWindow()
+    app.mainloop()

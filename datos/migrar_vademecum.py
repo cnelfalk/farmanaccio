@@ -23,7 +23,7 @@ def migrar_vademecum(ruta_excel):
             print("No se pudo conectar a la base de datos.")
             return
         cursor = conexion.cursor()
-        cursor.execute("USE ventas_db")
+        cursor.execute("USE farmanaccio_db")
         
         # Verificar si ya existen registros en la tabla vademecum
         cursor.execute("SELECT COUNT(*) FROM vademecum")
@@ -52,7 +52,7 @@ def migrar_vademecum(ruta_excel):
             print("No se pudo conectar a la base de datos.")
             return
         cursor = conexion.cursor()
-        cursor.execute("USE ventas_db")
+        cursor.execute("USE farmanaccio_db")
     except Error as e:
         print("Error al conectar a la base de datos para migración:", e)
         return

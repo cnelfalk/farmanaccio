@@ -5,7 +5,7 @@ from mysql.connector import Error
 class UsuarioManager:
     """
     Clase encargada de gestionar las operaciones relacionadas con los usuarios
-    en la base de datos (ventas_db). Incluye métodos para:
+    en la base de datos (farmanaccio_db). Incluye métodos para:
       - Validar credenciales.
       - Crear un nuevo usuario.
       - Obtener todos los usuarios.
@@ -25,7 +25,7 @@ class UsuarioManager:
                 return None
 
             cursor = conexion.cursor(dictionary=True)
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             cursor.execute(
                 "SELECT userId, usuario, password, role FROM usuarios WHERE usuario = %s",
                 (usuario,)
@@ -52,7 +52,7 @@ class UsuarioManager:
                 return False
 
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             cursor.execute(
                 "INSERT INTO usuarios (usuario, password, role) VALUES (%s, %s, %s)",
                 (usuario, password, rol)
@@ -72,7 +72,7 @@ class UsuarioManager:
         try:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             cursor.execute("SELECT userId, usuario, password, role FROM usuarios")
             usuarios = cursor.fetchall()
             conexion.close()
@@ -89,7 +89,7 @@ class UsuarioManager:
         try:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             cursor.execute("DELETE FROM usuarios WHERE userId = %s", (id_usuario,))
             conexion.commit()
             return cursor.rowcount > 0
@@ -106,7 +106,7 @@ class UsuarioManager:
         try:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             cursor.execute(
                 """
                 UPDATE usuarios 

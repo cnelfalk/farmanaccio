@@ -34,7 +34,7 @@ class FacturaGenerator:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor(dictionary=True)
             if conexion:
-                cursor.execute("USE ventas_db")
+                cursor.execute("USE farmanaccio_db")
                 cursor.execute("""
                     SELECT facturaId AS facturaId,
                            fechaEmision,

@@ -1,4 +1,5 @@
 # src/gui/detalle_lotes.py
+
 import customtkinter as ctk
 from tkinter import ttk, messagebox
 from tkcalendar import DateEntry  
@@ -7,20 +8,31 @@ from gui.login import icono_logotipo
 from mysql.connector import Error
 import datetime
 
+# Se modifica esta clase para que reciba, además, un diccionario "producto"
+# que contenga (al menos) el prodId.
 class DetalleLoteDetalleWindow(ctk.CTkToplevel):
-    def __init__(self, master, lote_records, numero_lote):
+    def __init__(self, master, lote_records, numero_lote, producto):
         super().__init__(master)
         self.title(f"Detalles para el Lote: {numero_lote}")
         self.geometry("600x600")
         self.lote_records = lote_records
         self.selected_record_id = None
 
+        # Almacenar la información del producto para actualizar luego el campo stock
+        self.producto = producto  # Debe contener, por ejemplo, self.producto["prodId"]
+
         self.grab_set()
 
-        label_title = ctk.CTkLabel(self, text=f"Registros para el Lote: {numero_lote}", font=("Arial", 14, "bold"))
+        label_title = ctk.CTkLabel(
+            self, text=f"Registros para el Lote: {numero_lote}",
+            font=("Arial", 14, "bold")
+        )
         label_title.pack(pady=10)
 
-        self.tree = ttk.Treeview(self, columns=("Fecha Ingreso", "Cantidad Ingresada", "Cantidad Disponible", "Vencimiento"), show="headings")
+        self.tree = ttk.Treeview(
+            self, columns=("Fecha Ingreso", "Cantidad Ingresada", "Cantidad Disponible", "Vencimiento"),
+            show="headings"
+        )
         self.tree.heading("Fecha Ingreso", text="Fecha Ingreso")
         self.tree.heading("Cantidad Ingresada", text="Cantidad Ingresada")
         self.tree.heading("Cantidad Disponible", text="Cantidad Disponible")
@@ -43,7 +55,8 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
             venc = rec.get("vencimiento")
             if isinstance(venc, (datetime.date, datetime.datetime)):
                 venc = venc.isoformat()
-            self.tree.insert("", "end", iid=str(iid), values=(fecha_ing, rec.get("cantidad_ingresada"), rec.get("cantidad_disponible"), venc))
+            self.tree.insert("", "end", iid=str(iid), values=(fecha_ing, rec.get("cantidad_ingresada"),
+                                                              rec.get("cantidad_disponible"), venc))
         
         self.tree.bind("<<TreeviewSelect>>", self.on_tree_select)
 
@@ -68,13 +81,14 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
         self.btn_dec_disp = ctk.CTkButton(self.mod_frame, text="-", command=self.decrementar_disponible)
         self.btn_dec_disp.grid(row=1, column=3, padx=5, pady=5)
 
-        # Nuevo widget de calendario para editar vencimiento:
         self.lbl_vencimiento = ctk.CTkLabel(self.mod_frame, text="Fecha de Vencimiento:")
         self.lbl_vencimiento.grid(row=2, column=0, padx=5, pady=5)
         self.date_vencimiento = DateEntry(self.mod_frame, width=12, date_pattern="yyyy-mm-dd")
         self.date_vencimiento.grid(row=2, column=1, padx=5, pady=5)
         
-        self.btn_confirm = ctk.CTkButton(self.mod_frame, text="Confirmar Modificación", command=self.confirmar_modificacion)
+        self.btn_confirm = ctk.CTkButton(
+            self.mod_frame, text="Confirmar Modificación", command=self.confirmar_modificacion
+        )
         self.btn_confirm.grid(row=3, column=0, columnspan=4, pady=10)
         
         ctk.CTkButton(self, text="Cerrar", command=self.destroy).pack(pady=5)
@@ -129,7 +143,6 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
             self.entry_disponible.delete(0, "end")
             self.entry_disponible.insert(0, actual - 1)
     
-    # En la ventana de detalle de lote (DetalleLoteDetalleWindow), dentro de confirmar_modificacion():
     def confirmar_modificacion(self):
         if not self.selected_record_id:
             messagebox.showerror("Error", "No se ha seleccionado ningún registro para modificar.")
@@ -147,7 +160,7 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
                 messagebox.showerror("Error", "No se pudo establecer conexión.")
                 return
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             sql = """
                 UPDATE lotes_productos
                 SET cantidad_ingresada = %s,
@@ -157,6 +170,20 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
             """
             cursor.execute(sql, (nueva_ingresada, nueva_disponible, nuevo_vencimiento_str, self.selected_record_id))
             conexion.commit()
+            
+            # NUEVO: Actualizar también el campo "stock" en la tabla de productos
+            sql_update_productos = """
+                UPDATE productos
+                SET stock = (
+                    SELECT IFNULL(SUM(cantidad_disponible), 0)
+                    FROM lotes_productos
+                    WHERE prodId = %s
+                )
+                WHERE prodId = %s
+            """
+            cursor.execute(sql_update_productos, (self.producto["prodId"], self.producto["prodId"]))
+            conexion.commit()
+            
             cursor.close()
             conexion.close()
             messagebox.showinfo("Éxito", "Registro actualizado correctamente.", parent=self)
@@ -167,19 +194,22 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
                 nueva_disponible,
                 nuevo_vencimiento_str
             ))
-            # Generar evento para notificar que los datos se han actualizado.
-            # Se puede usar 'self.event_generate' o, preferiblemente, una llamada a la raíz.
-            self.event_generate("<<DatosActualizados>>")
+            
+            # Notificar a las ventanas superiores que se actualizaron los datos
+            # Se usa el widget raíz para asegurar que el evento se propague globalmente.
+            root = self.winfo_toplevel()
+            root.event_generate("<<DatosActualizados>>", when="tail")
         except Error as e:
             messagebox.showerror("Error", f"No se pudo actualizar el registro:\n{e}", parent=self)
 
 
+# Ahora se modifica la invocación en DetalleLotesWindow para pasar también la información del producto.
 class DetalleLotesWindow(ctk.CTkToplevel):
     def __init__(self, master, producto, detalle_lotes):
         super().__init__(master)
         self.title(f"Detalle de Lotes: {producto.get('nombre')}")
         self.geometry("700x500")
-        self.producto = producto
+        self.producto = producto  # Aquí se almacena toda la info del producto, incluido prodId
         self.detalle_lotes = detalle_lotes
 
         self.grab_set()
@@ -240,9 +270,11 @@ class DetalleLotesWindow(ctk.CTkToplevel):
         if not registros_lote:
             messagebox.showinfo("Detalle", "No hay registros para este lote.", parent=self)
             return
-        DetalleLoteDetalleWindow(self, registros_lote, lote_seleccionado)
+        # Se pasa self.producto a la ventana de detalle de lote
+        from gui.detalle_lotes import DetalleLoteDetalleWindow
+        DetalleLoteDetalleWindow(self, registros_lote, lote_seleccionado, self.producto)
 
-# Ejemplo de uso:
+# Ejemplo de uso (simulación):
 if __name__ == "__main__":
     producto_ejemplo = {
         "prodId": 1,
@@ -253,10 +285,11 @@ if __name__ == "__main__":
         "laboratorio": "FarmacoLab"
     }
     detalle_lotes_ejemplo = [
-        {"loteID": 1, "numeroLote": "LoteA", "fechaIngreso": "2024-01-15", "vencimiento": "2025-06-30", "cantidad_ingresada": 50, "cantidad_disponible": 20},
+        {"loteID": 1, "numeroLote": "LoteA", "fechaIngreso": "2024-01-15", "vencimiento": "2025-06-30", "cantidad_ingresada": 50, "cantidad_disponible": 10},
         {"loteID": 2, "numeroLote": "LoteA", "fechaIngreso": "2024-02-10", "vencimiento": "2025-06-30", "cantidad_ingresada": 30, "cantidad_disponible": 30},
         {"loteID": 3, "numeroLote": "LoteB", "fechaIngreso": "2024-03-05", "vencimiento": "2025-04-15", "cantidad_ingresada": 100, "cantidad_disponible": 100},
     ]
+    import customtkinter as ctk
     app = ctk.CTk()
     app.withdraw()
     ventana = DetalleLotesWindow(app, producto_ejemplo, detalle_lotes_ejemplo)
