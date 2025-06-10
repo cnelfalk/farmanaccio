@@ -1,3 +1,5 @@
+# src/logica/gestor_usuarios.py
+
 from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
 
@@ -31,15 +33,12 @@ class UsuarioManager:
             if resultado:
                 if resultado["password"] == password:
                     if resultado.get("activo", 0) != 1:
-                        # Retornamos "inactivo" para distinguir este caso
                         return "inactivo"
                     return resultado
             return None
         except Error as e:
             print("Error al validar usuario:", e)
             return None
-
-
 
     def crear_usuario(self, usuario: str, password: str, rol: str) -> bool:
         try:
@@ -73,7 +72,6 @@ class UsuarioManager:
             return []
 
     def obtener_usuarios_por_estado(self, activo: int) -> list:
-        # Este método es el que filtra según el estado activo (1) o inactivo (0)
         try:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor(dictionary=True)
@@ -88,7 +86,6 @@ class UsuarioManager:
             return []
 
     def eliminar_usuario(self, id_usuario) -> bool:
-        # Actualiza activo a 0
         try:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
@@ -103,13 +100,15 @@ class UsuarioManager:
             print("Error al eliminar usuario:", e)
             return False
 
-    def restaurar_usuario(self, id_usuario) -> bool:
-        # Actualiza activo a 1
+    def restaurar_usuario(self, id_usuario, nuevo_rol) -> bool:
         try:
             conexion = ConexionBD.obtener_conexion()
+            if conexion is None:
+                return False
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("UPDATE usuarios SET activo = 1 WHERE userId = %s", (id_usuario,))
+            # Actualizamos activo a 1 y asignamos el rol recibido
+            cursor.execute("UPDATE usuarios SET activo = 1, role = %s WHERE userId = %s", (nuevo_rol, id_usuario))
             conexion.commit()
             affected = cursor.rowcount
             cursor.close()
@@ -139,11 +138,9 @@ class UsuarioManager:
 
 if __name__ == "__main__":
     um = UsuarioManager()
-    # Prueba de validación
     user = um.validar_usuario("admin", "admin")
     print("Usuario validado:", user)
 
-    # Prueba de creación
     if um.crear_usuario("nuevo_usuario", "pass123", "empleado"):
         print("Usuario creado exitosamente.")
     else:

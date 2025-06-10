@@ -5,7 +5,7 @@ import customtkinter as ctk
 import tkinter.messagebox as messagebox
 from customtkinter import CTkToplevel, CTkScrollableFrame
 from logica.gestor_usuarios import UsuarioManager
-from PIL import Image  # Asegurate de importarlo también
+from PIL import Image  # Asegúrate de importarlo también
 from gui.login import icono_logotipo
 
 class AdminUsuariosWindow(CTkToplevel):
@@ -26,6 +26,8 @@ class AdminUsuariosWindow(CTkToplevel):
 
         self.usuario_actual = usuario_actual
         self.usuario_manager = UsuarioManager()
+        # Diccionario para guardar el combobox de rol para cada usuario inactivo
+        self.inactive_user_roles = {}
 
         # Combobox para filtrar por estado (Activos/Inactivos)
         self.filter_var = StringVar(value="Activos")
@@ -82,15 +84,18 @@ class AdminUsuariosWindow(CTkToplevel):
                                     font=("Arial", 12), fg_color="#003300")
             mensaje.pack(expand=True, pady=20)
             return
-        # Si hay usuarios, aseguramos que se muestren los encabezados
-        self._dibujar_encabezados()
         
+        self._dibujar_encabezados()
+
         # Limpiar las filas de datos que pudieran existir (desde la fila 1)
         for widget in self.tabla_frame.winfo_children():
             info = widget.grid_info()
             # Saltar la fila 0 (encabezados)
             if int(info.get("row", 0)) > 0:
                 widget.destroy()
+        
+        # Reiniciamos el diccionario de combobox de usuarios inactivos
+        self.inactive_user_roles = {}
         
         # Listar los usuarios, cada uno en una fila a partir de la fila 1.
         for i, usuario in enumerate(usuarios, start=1):
@@ -129,6 +134,8 @@ class AdminUsuariosWindow(CTkToplevel):
                 )
                 btn_del.grid(row=i, column=5, padx=2, pady=5)
             else:
+                # Guardamos la referencia del combobox para el usuario inactivo
+                self.inactive_user_roles[id_] = combo_rol
                 btn_restaurar = ctk.CTkButton(
                     self.tabla_frame, text="Restaurar Usuario", fg_color="green", width=15,
                     command=lambda id_=id_: self.restaurar_usuario(id_)
@@ -189,13 +196,17 @@ class AdminUsuariosWindow(CTkToplevel):
                 messagebox.showerror("Error", "No se pudo eliminar el usuario.")
 
     def restaurar_usuario(self, id_):
-        if messagebox.askyesno("Confirmar", "¿Desea restaurar este usuario?"):
-            if self.usuario_manager.restaurar_usuario(id_):
+        # Se extrae el rol actual del combobox correspondiente
+        nuevo_rol = self.inactive_user_roles.get(id_).get() if id_ in self.inactive_user_roles else None
+        if not nuevo_rol:
+            messagebox.showerror("Error", "No se pudo determinar el rol para este usuario.")
+            return
+        if messagebox.askyesno("Confirmar", f"¿Desea restaurar este usuario con el rol '{nuevo_rol}'?"):
+            if self.usuario_manager.restaurar_usuario(id_, nuevo_rol):
                 messagebox.showinfo("Éxito", "Usuario restaurado.")
                 self.cargar_usuarios()
             else:
                 messagebox.showerror("Error", "No se pudo restaurar el usuario.")
-
 
 if __name__ == "__main__":
     import sys
