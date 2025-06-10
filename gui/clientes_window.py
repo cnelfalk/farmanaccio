@@ -10,11 +10,24 @@ class ClientesWindow(ctk.CTkToplevel):
     def __init__(self, parent):
         super().__init__(parent)
         self.title("Gestión de Clientes")
-        self.geometry("820x620")
         self.resizable(False, False)
+
+        # Definir dimensiones de la ventana
+        window_width = 900
+        window_height = 565
+
+        # Calcular la posición para centrar la ventana
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+
+        # Establecer la geometría centrada
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
         self.cliente_manager = ClienteManager()
         self.cliente_actual_id = None
+        self.selected_cliente = None  # Nuevo atributo para almacenar el cliente seleccionado
         self.clientes_map = {}  # id → dict
 
         # ─── Búsqueda ──────────────────────────────────────────────────────
@@ -30,29 +43,29 @@ class ClientesWindow(ctk.CTkToplevel):
         self.btn_mostrar_todos = ctk.CTkButton(self.frame_search, text="Mostrar Todos", width=110, command=self._cargar_clientes)
         self.btn_mostrar_todos.pack(side="left", padx=5)
 
-        # ─── Listado con scrollbars ────────────────────────────────────────
-        self.frame_tree_outer = ctk.CTkFrame(self)
-        self.frame_tree_outer.pack(fill="both", padx=10, pady=10, expand=False)
+        # ─── Treeview ──────────────────────────────────────────────────────
+        self.frame_tree_outer = ctk.CTkFrame(self, fg_color="#823F2A")
+        self.frame_tree_outer.pack(fill="both", padx=10, pady=10)
 
-        self.frame_tree = ctk.CTkFrame(self.frame_tree_outer)
-        self.frame_tree.pack(fill="both", expand=True)
-        self.frame_tree.configure(height=260)  # altura fija
+        # Frame con altura fija (~130px para 5 filas visibles)
+        self.frame_tree = ctk.CTkFrame(self.frame_tree_outer, height=130)
+        self.frame_tree.pack(fill="x", padx=10, pady=10, expand=False)
+        self.frame_tree.pack_propagate(False)
 
-        cols = ("ID", "Nombre", "Apellido", "CUIL", "Teléfono", "Email", "Dirección")
-        self.tree = ttk.Treeview(self.frame_tree, columns=cols, show="headings")
+        cols = ("ID", "Nombre", "Apellido", "CUIL", "Teléfono", "Email", "Dirección", "IVA")
+        self.tree = ttk.Treeview(self.frame_tree, columns=cols, show="headings", height=5)
         for col in cols:
             anchor = "center" if col == "ID" else "w"
             self.tree.heading(col, text=col)
             self.tree.column(col, width=120, anchor=anchor)
+        self.tree.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
-        vsb = ttk.Scrollbar(self.frame_tree, orient="vertical", command=self.tree.yview)
-        hsb = ttk.Scrollbar(self.frame_tree, orient="horizontal", command=self.tree.xview)
+        vsb = ctk.CTkScrollbar(self.frame_tree, orientation="vertical", command=self.tree.yview)
+        vsb.grid(row=0, column=1, sticky="ns", pady=10)
+        hsb = ctk.CTkScrollbar(self.frame_tree, orientation="horizontal", command=self.tree.xview)
+        hsb.grid(row=1, column=0, columnspan=2, sticky="ew", padx=10)
         self.tree.configure(yscrollcommand=vsb.set, xscrollcommand=hsb.set)
-
-        self.tree.grid(row=0, column=0, sticky="nsew")
-        vsb.grid(row=0, column=1, sticky="ns")
-        hsb.grid(row=1, column=0, columnspan=2, sticky="ew")
-        self.frame_tree.rowconfigure(0, weight=1)
+        self.frame_tree.rowconfigure(0, weight=0)
         self.frame_tree.columnconfigure(0, weight=1)
 
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
@@ -61,25 +74,62 @@ class ClientesWindow(ctk.CTkToplevel):
         self.frame_form = ctk.CTkFrame(self)
         self.frame_form.pack(fill="x", padx=10, pady=(0, 10))
 
-        fields = [
-            ("nombre",   "Nombre"),
-            ("apellido", "Apellido"),
-            ("cuil",     "CUIL"),
-            ("telefono", "Teléfono"),
-            ("email",    "Email"),
-            ("direccion","Dirección")
-        ]
-        self.entries = {}
-        for i, (key, label) in enumerate(fields):
-            ctk.CTkLabel(self.frame_form, text=f"{label}:").grid(row=i, column=0, sticky="e", padx=5, pady=5)
-            ent = ctk.CTkEntry(self.frame_form)
-            ent.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
-            self.entries[key] = ent
+        # Creamos dos subframes para las dos columnas
+        self.left_frame = ctk.CTkFrame(self.frame_form, fg_color="#003D19")
+        self.left_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=(5, 0))
+        self.right_frame = ctk.CTkFrame(self.frame_form, fg_color="#003D19")
+        self.right_frame.grid(row=0, column=1, sticky="nsew", padx=5, pady=(5, 0))
+
+        # Se distribuye el espacio del formulario de forma equitativa
+        self.frame_form.grid_columnconfigure(0, weight=1)
         self.frame_form.grid_columnconfigure(1, weight=1)
 
-        # ─── Botones CRUD ──────────────────────────────────────────────────
+        self.entries = {}
+
+        # Column izquierda con "Nombre", "Apellido" y "Teléfono"
+        left_fields = [
+            ("nombre",   "Nombre"),
+            ("apellido", "Apellido"),
+            ("telefono", "Teléfono")
+        ]
+        for i, (key, label_text) in enumerate(left_fields):
+            # Se fija un ancho para el label (por ejemplo 100) y se centra sin que se expanda
+            label = ctk.CTkLabel(self.left_frame, text=f"{label_text}:", anchor="center", width=100)
+            label.grid(row=i, column=0, sticky="n", padx=5, pady=5)
+            ent = ctk.CTkEntry(self.left_frame)
+            ent.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
+            self.entries[key] = ent
+        # Solo la columna de la entrada se expande
+        self.left_frame.grid_columnconfigure(1, weight=1)
+
+        # Column derecha con "CUIT-CUIL", "Dirección" y "E-mail"
+        right_fields = [
+            ("cuil",     "CUIT-CUIL"),
+            ("direccion", "Dirección"),
+            ("email",    "E-mail")
+        ]
+        for i, (key, label_text) in enumerate(right_fields):
+            label = ctk.CTkLabel(self.right_frame, text=f"{label_text}:", anchor="center", width=100)
+            label.grid(row=i, column=0, sticky="n", padx=5, pady=5)
+            ent = ctk.CTkEntry(self.right_frame)
+            ent.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
+            self.entries[key] = ent
+        self.right_frame.grid_columnconfigure(1, weight=1)
+
+
+        # Los demás elementos (por ejemplo, el frame del IVA) se redistribuyen en base a la nueva cantidad de filas.
+        row_iva = 3  # Al tener tres filas por columna
+        iva_frame = ctk.CTkFrame(self.frame_form, fg_color="#304C27")
+        iva_frame.grid(row=1, column=0, columnspan=2, pady=5)
+        iva_label = ctk.CTkLabel(iva_frame, text="IVA:", anchor="center")
+        iva_label.pack(side="left", padx=5)
+        opciones_iva = ["Exento", "Monotributo", "Resp. Insc.", "Eventual", "Cons. Final"]
+        self.combobox_iva = ctk.CTkComboBox(iva_frame, values=opciones_iva, state="readonly", width=100)
+        self.combobox_iva.set("")
+        self.combobox_iva.pack(side="left", padx=5)
+
         self.frame_btns = ctk.CTkFrame(self.frame_form, fg_color="transparent")
-        self.frame_btns.grid(row=len(fields), column=0, columnspan=2, pady=10)
+        self.frame_btns.grid(row=row_iva+1, column=0, columnspan=2, pady=10)
 
         self.btn_agregar   = ctk.CTkButton(self.frame_btns, text="Agregar", width=100, command=self._agregar)
         self.btn_modificar = ctk.CTkButton(self.frame_btns, text="Modificar", width=100, command=self._modificar)
@@ -89,17 +139,12 @@ class ClientesWindow(ctk.CTkToplevel):
         self.btn_modificar.grid(row=0, column=1, padx=5)
         self.btn_eliminar.grid(row=0, column=2, padx=5)
 
-        # ─── Botón Volver ──────────────────────────────────────────────────
         self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy, width=120)
         self.btn_volver.pack(pady=(0, 12))
 
-        # Establece el ícono tras 150ms
         self.after(150, lambda: self.iconbitmap(icono_logotipo))
-
-        # Carga inicial
         self._cargar_clientes()
 
-    # ───────────────────────────────── CRUD y utilidades ─────────────────────────────────
     def _cargar_clientes(self):
         self._poblar_tree(self.cliente_manager.obtener_clientes())
         self._reset_form()
@@ -112,7 +157,7 @@ class ClientesWindow(ctk.CTkToplevel):
             self.clientes_map[c["clienteId"]] = c
             self.tree.insert("", "end", values=(
                 c["clienteId"], c["nombre"], c["apellido"], c["cuil"],
-                c["telefono"], c["email"], c["direccion"]
+                c["telefono"], c["email"], c["direccion"], c.get("iva", "")
             ))
         self._ajustar_ancho_id()
 
@@ -139,8 +184,10 @@ class ClientesWindow(ctk.CTkToplevel):
 
     def _reset_form(self):
         self.cliente_actual_id = None
+        self.selected_cliente = None  # Reiniciamos la selección
         for ent in self.entries.values():
             ent.delete(0, tk.END)
+        self.combobox_iva.set("")
         self.btn_agregar.configure(state="normal")
         self.btn_modificar.configure(state="disabled")
         self.btn_eliminar.configure(state="disabled")
@@ -151,25 +198,25 @@ class ClientesWindow(ctk.CTkToplevel):
             return
         cid = int(self.tree.item(sel[0], "values")[0])
         c = self.clientes_map[cid]
+        # Actualizamos el formulario
         for k in self.entries:
             self.entries[k].delete(0, tk.END)
             self.entries[k].insert(0, c.get(k, ""))
+        self.combobox_iva.set(c.get("iva", ""))
         self.cliente_actual_id = cid
+        self.selected_cliente = c  # Guardamos el cliente seleccionado
         self.btn_agregar.configure(state="disabled")
         self.btn_modificar.configure(state="normal")
         self.btn_eliminar.configure(state="normal")
 
-    def _validar(self):
+    def _agregar(self):
         if not (self.entries["nombre"].get().strip() and
                 self.entries["apellido"].get().strip() and
                 self.entries["cuil"].get().strip()):
             messagebox.showwarning("Atención", "Nombre, Apellido y CUIL son obligatorios.")
-            return False
-        return True
-
-    def _agregar(self):
-        if not self._validar(): return
+            return
         datos = {k: v.get().strip() for k, v in self.entries.items()}
+        datos["iva"] = self.combobox_iva.get().strip()
         if self.cliente_manager.crear_cliente(datos):
             messagebox.showinfo("Éxito", "Cliente agregado.")
             self._cargar_clientes()
@@ -177,8 +224,10 @@ class ClientesWindow(ctk.CTkToplevel):
             messagebox.showerror("Error", "No se pudo agregar el cliente.")
 
     def _modificar(self):
-        if self.cliente_actual_id is None or not self._validar(): return
+        if self.cliente_actual_id is None:
+            return
         datos = {k: v.get().strip() for k, v in self.entries.items()}
+        datos["iva"] = self.combobox_iva.get().strip()
         if self.cliente_manager.actualizar_cliente(self.cliente_actual_id, datos):
             messagebox.showinfo("Éxito", "Cliente actualizado.")
             self._cargar_clientes()
@@ -186,7 +235,8 @@ class ClientesWindow(ctk.CTkToplevel):
             messagebox.showerror("Error", "No se pudo actualizar el cliente.")
 
     def _eliminar(self):
-        if self.cliente_actual_id is None: return
+        if self.cliente_actual_id is None:
+            return
         if messagebox.askyesno("Confirmar", "¿Eliminar este cliente?"):
             if self.cliente_manager.eliminar_cliente(self.cliente_actual_id):
                 messagebox.showinfo("Éxito", "Cliente eliminado.")

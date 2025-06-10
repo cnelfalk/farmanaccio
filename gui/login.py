@@ -1,7 +1,7 @@
 # src/gui/login.py
 import customtkinter as ctk
 import os
-from logica.gestor_usuarios import UsuarioManager  # Actualizado: se importa la clase
+from logica.gestor_usuarios import UsuarioManager  # Se importa la clase
 from PIL import Image
 from customtkinter import CTkImage
 from CTkMessagebox import CTkMessagebox
@@ -29,7 +29,7 @@ class LoginWindow(ctk.CTk):
 
         # Definir dimensiones de la ventana
         window_width = 345
-        window_height = 300
+        window_height = 280
 
         # Calcular la posición para centrar la ventana
         screen_width = self.winfo_screenwidth()
@@ -48,6 +48,10 @@ class LoginWindow(ctk.CTk):
         # Mostrar imagen de fondo
         self.bg_label = ctk.CTkLabel(self, image=self.bg_image, text="")
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+
+        # Botón de salir en la esquina superior izquierda
+        self.btn_salir = ctk.CTkButton(self, text="×", command=self.exit_app, fg_color="#0A4C0A", hover_color="#052605", width=30)
+        self.btn_salir.place(x=308, y=8)
 
         # Imagen de fondo detrás del label "Ingrese sus credenciales"
         self.bg_credenciales = CTkImage(
@@ -86,19 +90,19 @@ class LoginWindow(ctk.CTk):
         self.entry_password.pack(side="left", padx=(0, 5))
 
         self.password_visible = False
-        self.toggle_btn = ctk.CTkButton(
-            self.password_frame, text="👁", width=10,
-            command=self.toggle_password_visibility
-        )
+        self.toggle_btn = ctk.CTkButton(self.password_frame, text="👁", width=10,
+                                        command=self.toggle_password_visibility)
         self.toggle_btn.pack(side="left")
 
         # Botón para ingresar
         self.btn_ingresar = ctk.CTkButton(self, text="Ingresar", command=self.login)
         self.btn_ingresar.pack(pady=15)
 
+        # Vinculamos la tecla Enter en toda la ventana para ejecutar login
+        self.bind("<Return>", lambda event: self.login())
+
     def toggle_password_visibility(self):
-        self.password_visible = not self.password_visible
-        if self.password_visible:
+        if self.entry_password.cget("show") == "*":
             self.entry_password.configure(show="")
             self.toggle_btn.configure(text="🚫")
         else:
@@ -112,19 +116,27 @@ class LoginWindow(ctk.CTk):
             CTkMessagebox(title="Error", message="Ingrese usuario y contraseña", icon="cancel", fade_in_duration=1)
             return
 
-        # Instanciar la clase UsuarioManager y validar el usuario
         um = UsuarioManager()
         user_info = um.validar_usuario(usuario, password)
-        if user_info is not None:
+        if user_info == "inactivo":
+            CTkMessagebox(
+                title="Error al iniciar sesión",
+                message="El usuario asociado con las credenciales se encuentra inactivo. Consulte con un administrador para rehabilitarlo.",
+                icon="cancel",
+                fade_in_duration=1
+            )
+            return
+        elif user_info is not None:
             self.destroy()
-            # Abrir la ventana principal pasando la información del usuario
             from gui.main_window import MainWindow
             app = MainWindow(user_info)
             app.mainloop()
         else:
             CTkMessagebox(title="Error", message="Credenciales incorrectas", icon="cancel", fade_in_duration=1)
+    
+    def exit_app(self):
+        self.destroy()
 
-# Ejemplo para probar el login:
 if __name__ == "__main__":
     app = LoginWindow()
     app.mainloop()

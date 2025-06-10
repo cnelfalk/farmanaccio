@@ -12,26 +12,27 @@
 </p>
 
 ## Dependencias externas
-* [mysql.connector](https://pypi.org/project/mysql-connector-python/)
+* [mysql-connector-python](https://pypi.org/project/mysql-connector-python/)
 * [customtkinter](https://pypi.org/project/customtkinter/)
 * [CTkMessagebox](https://pypi.org/project/CTkMessagebox/)
 * [Pillow](https://pypi.org/project/pillow/)
 * [docxtpl](https://pypi.org/project/docxtpl/)
 * [docx2pdf](https://pypi.org/project/docx2pdf/)
-* [docx.shared](https://pypi.org/project/python-docx/)
+* [python-docx](https://pypi.org/project/python-docx/)
 
 ## Síntesis
-Sistema informático programado en Python para utilizarse en el contexto de una farmacia.
+Sistema informático programado en Python para utilizarse en el contexto de una farmacia.  
+FarmaNaccio integra gestión de usuarios, clientes, stock e inventario, y ventas, con una interfaz moderna desarrollada con CustomTkinter.
 
-Este proyecto se ha realizado por medio de la aplicación de la metodología ágil "Programación Extrema" (XP), a través de la herramienta [Trello](https://trello.com/).
+Este proyecto se ha realizado aplicando la metodología ágil "Programación Extrema" (XP) utilizando [Trello](https://trello.com/).
 
 ## Participantes
-- Alumnos (Programadores):
+- **Alumnos (Programadores):**
   - Matías Daniel Chiacchio
   - Luis Ariel Espinoza
   - Fabrizio Manuel Mansilla
 
-- Profesores:
+- **Profesores:**
   - Cristian Fernando Cerquand
   - Johanna Motta
 
@@ -40,41 +41,40 @@ Este proyecto se ha realizado por medio de la aplicación de la metodología ág
 ## 1. Inicio Rápido
 
 1. **Inicie XAMPP:**  
-   Antes de ejecutar el programa, abra XAMPP (o su servicio MySQL) para asegurarse de que el servidor esté activo.
+   Antes de ejecutar el programa, abra XAMPP (o asegúrese de que el servicio MySQL esté activo).
 
 2. **Ejecute la Aplicación:**  
    Ejecute `principal.py` desde el directorio raíz del proyecto.  
-   Al iniciarse, el sistema:
-   - Inicializa la conexión a la base de datos.
-   - Crea la base de datos y las tablas necesarias (si es la primera ejecución).
-   - Abre la pantalla de Login.
+   En la primera ejecución, se crean la base de datos y las tablas necesarias, y se realiza la migración del vademécum.
 
 ---
 
 ## 2. Pantalla de Login
 
-La **Pantalla de Login** es la puerta de entrada a Farmanaccio.
+La **Pantalla de Login** es la puerta de entrada a FarmaNaccio:
 
 - **Campos de Usuario y Contraseña:**  
   Ingrese sus credenciales. Si se dejan campos vacíos, aparecerá una advertencia.
-
+  
 - **Botón "Ingresar":**  
-  Al pulsarlo, el sistema valida las credenciales ingresadas consultando la base de datos.
+  Valida las credenciales consultando la base de datos.
+
+- **Botón de Salida ("×"):**  
+  Ubicado en la esquina superior (ahora posicionado en la parte superior derecha conforme a los ajustes de estilo), permite cerrar la aplicación.
 
 ---
 
 ## 3. Ventana Principal
 
-Tras un inicio de sesión exitoso se desplegará la **Ventana Principal** que centraliza el acceso a los módulos del sistema.
+Tras un inicio de sesión exitoso se desplegará la **Ventana Principal**, la cual centraliza el acceso a los módulos del sistema:
 
-- **Botón de Usuario:**  
-  Ubicado en la esquina superior izquierda; muestra el usuario activo. Al hacer clic, se despliega un menú con opciones para:
-  - Agregar un nuevo usuario.
-  - Administrar usuarios (solo para administradores).
-  - Cerrar sesión.
+- **Menú de Usuario:**  
+  - Muestra el usuario activo.
+  - Al hacer clic se despliega un menú con las opciones de agregar/administrar usuarios y cerrar sesión.  
+  - El módulo de administración permite filtrar entre usuarios activos/inactivos y actualizar el rol al restaurar usuarios inactivos.
 
 - **Acceso a Módulos:**  
-  En el área central encontrará botones para:
+  En el área central se encuentran botones para:
   - **Control de Stock**
   - **Gestión de Ventas**
   - **Gestión de Clientes**
@@ -83,93 +83,97 @@ Tras un inicio de sesión exitoso se desplegará la **Ventana Principal** que ce
 
 ## 4. Gestión de Usuarios
 
-Este módulo permite administrar los usuarios del sistema.
+Permite administrar los usuarios del sistema:
 
 ### Agregar Usuario
 
-- Seleccione **"(+) Agregar usuario"** desde el menú desplegable del botón de usuario.
-- Complete el formulario:
-  - **Nombre de Usuario**
-  - **Contraseña** (puede alternar la visibilidad con “👁” o “🚫”)
-  - **Rol:** Seleccione entre *admin* o *empleado*.
+- Seleccione **"(+) Agregar usuario"** desde el menú.
+- Complete el formulario (Nombre de Usuario, Contraseña –con opción de mostrar/ocultar– y Rol).
 - Pulse **"Guardar"**.  
-  El sistema valida que la contraseña tenga al menos 5 caracteres y que todos los campos sean llenados correctamente.
+  Se valida que la contraseña tenga al menos 5 caracteres y que los campos obligatorios estén completos.
 
 ### Administrar Usuarios
 
-- Seleccione **"Administrar usuarios"** para ver la lista de usuarios en una tabla que muestra:
-  - **ID, Usuario, Contraseña, Rol y Acciones**.
-- Para **Modificar** un usuario, edite la información en el formulario y pulse **"Modificar"**.
-- Para **Eliminar** un usuario, haga clic en **"Eliminar"** y confirme la acción mediante una ventana emergente.
+- Seleccione **"Administrar usuarios"** para ver la lista de usuarios en una tabla.
+- Funciones adicionales:
+  - **Filtrado por Estado:** permite cambiar entre usuarios activos e inactivos.
+  - **Modificar y Eliminar:** Realice cambios en usuarios activos.
+  - **Restaurar Usuario:** Desde el listado de usuarios inactivos se puede restaurar a un usuario, actualizando también el rol según lo seleccionado en el combobox.
 
 ---
 
 ## 5. Gestión de Clientes
 
-El módulo de clientes permite gestionar toda la información de sus clientes.
+El módulo de clientes permite gestionar los datos de sus clientes.
 
 ### Registro y Consulta
 
-- Acceda a través del botón **"Gestión de Clientes"** en la Ventana Principal.
+- Acceda a través del botón **"Gestión de Clientes"**.
 - La pantalla muestra:
   - Un campo de búsqueda para filtrar clientes por **Nombre, Apellido o CUIL**.
-  - Una tabla con los clientes registrados, incluyendo **ID, Nombre, Apellido, CUIL, Teléfono, Email y Dirección**.
+  - Una tabla con clientes registrados (ID, Nombre, Apellido, CUIL, Teléfono, Email y Dirección).
 
 ### Edición y Eliminación
 
-- Seleccione un cliente de la tabla para cargar sus datos en el formulario.
-- Realice las modificaciones y pulse:
-  - **"Modificar"** para actualizar, o
-  - **"Eliminar"** para borrar el registro (previa confirmación).
+- Seleccione un cliente para cargar sus datos.
+- Use las opciones **Modificar** o **Eliminar** (previa confirmación) para actualizar los registros.
 
 ---
 
 ## 6. Control de Stock
 
-El módulo de stock es esencial para el control del inventario.
+Permite el control y actualización del inventario:
 
 ### Consulta y Búsqueda
 
-- Abra la **Ventana de Stock** desde la Ventana Principal.
-- Se mostrará una tabla con los productos (columnas: **ID, Nombre, Precio, Stock**) y un campo de búsqueda.
+- Abra la **Ventana de Stock**.
+- Se muestra una tabla con productos, incluyendo **ID, Nombre, Precio y Stock**.
+- Un campo de búsqueda permite filtrar productos.
 
 ### Alta y Actualización
 
-- Para **Agregar** un producto, complete el formulario con:
-  - **Nombre**
-  - **Precio**
-  - **Stock**
-- Pulse **"Agregar Producto"**.  
-  Si el producto ya existe, el sistema suma la cantidad al stock actual y actualiza el precio.
-- Para **Modificar** un producto, seleccione el producto en la tabla, edite los datos y pulse **"Modificar Producto"**.
+- Para **Agregar** un producto, complete el formulario con Nombre, Precio y Stock.
+- Si el producto existe, se suma la nueva cantidad al stock actual y se actualiza el precio (con diálogo de conflicto, si es necesario).
 
 ### Eliminación
 
-- Seleccione el producto y, tras confirmar mediante una ventana emergente, elimínelo del inventario.
+- Seleccione un producto y, tras una confirmación, elimínelo del inventario.
 
 ---
 
 ## 7. Gestión de Ventas
 
-Este módulo abarca todo el proceso de venta, desde la selección del producto hasta la generación de la factura.
+Este módulo abarca el proceso de venta completo, de la selección de productos a la generación de documentos.
 
-### Creación y Consulta del Carrito
+### Creación y Gestión del Carrito
 
-- Desde el **Panel de Productos**, busque y seleccione el producto deseado.
-- Ajuste la **cantidad** y pulse **"Agregar al Carrito"** para incluir el producto en la venta.
-- El **Panel del Carrito** mostrará una tabla con los productos añadidos que incluye:
-  - **ID, Producto, Precio Unitario, Cantidad y Subtotal**.
+- Desde el **Panel de Productos**, seleccione el producto deseado y ajuste la **cantidad**.
+- Pulse **"Agregar al Carrito"** para incluirlo en la compra.
+- En el **Panel del Carrito** se detalla el listado de productos (ID, Producto, Precio Unitario, Cantidad y Subtotal).
+- Se ofrecen controles para modificar o eliminar productos del carrito, incluyendo la aplicación de descuentos.
 
-### Modificación del Carrito
+### Confirmación de Venta
 
-- Utilice los controles (botones “+” y “−”) para ajustar la cantidad, o elimine productos del carrito.
-- El sistema recalcula automáticamente el total, aplicando descuentos si se indican.
+- Al pulsar **"Confirmar Venta"**, el sistema valida stock y actualiza la base de datos, descontando unidades de los lotes.
+- Se genera una factura utilizando una plantilla DOCX (convertida a PDF para su descarga).
+- Opcionalmente, si se configura la generación de remito, se genera y asocia a un cliente.
 
-### Confirmación de Venta y Generación de Facturas
+### Requisitos Adicionales para Facturación y Remitos
 
-- Presione **"Confirmar Venta"** para finalizar la compra.
-- El sistema verificará que el stock sea suficiente y actualizará la base de datos, descontando las cantidades vendidas.
-- Se generará una factura utilizando una plantilla DOCX y se convertirá a PDF. Se le pedirá elegir la ubicación de guardado y se mostrará una notificación de éxito.
+**Importante:**  
+Para la **generación de facturas y remitos** se requiere que el usuario tenga instalado Microsoft Word y que este se haya abierto recientemente, ya que la conversión de DOCX a PDF depende de la funcionalidad de Word.
 
 ---
 
+## Instalación y Ejecución
+
+1. **Base de Datos:**  
+   Asegúrese de que MySQL (o XAMPP) esté en funcionamiento.
+
+2. **Inicialización:**  
+   Ejecute `principal.py` desde el directorio raíz del proyecto.  
+   En la primera ejecución se crearán la base de datos y las tablas, y se migrarán los registros del vademécum.
+
+3. **Inicio de Sesión:**  
+   Inicie sesión con sus credenciales.  
+   Los administradores tienen acceso a funcionalidades ampliadas (gestión de usuarios).

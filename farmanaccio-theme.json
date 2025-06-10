@@ -15,7 +15,7 @@
     "CTkButton": {
       "corner_radius": 6,
       "border_width": 0,
-      "fg_color": "#A89866",
+      "fg_color": "#8E663E",
       "hover_color": "#544B33",
       "border_color": "#593D27",
       "text_color": "white",
@@ -49,8 +49,8 @@
       "border_width": 2,
       "fg_color": "#F9F9FA",
       "border_color": "#979DA2",
-      "button_color": "#9D47C1",
-      "button_hover_color": "#3E2789",
+      "button_color": "#493227",
+      "button_hover_color": "#825946",
       "text_color": "black",
       "text_color_disabled": ["gray74", "gray60"]
     },
@@ -58,7 +58,7 @@
       "corner_radius": 1000,
       "border_width_checked": 6,
       "border_width_unchecked": 3,
-      "fg_color": ["#9DB754", "9DB754"],
+      "fg_color": ["#9DB754", "#9DB754"],
       "border_color": ["#3E454A", "#949A9F"],
       "hover_color": ["#325882", "#14375e"],
       "text_color": ["gray14", "gray84"],

@@ -21,6 +21,7 @@ class ClienteManager:
           - 'telefono' (opcional)
           - 'email' (opcional)
           - 'direccion' (opcional)
+          - 'iva' (opcional; en caso de no completarse, se almacena vacío)
         
         Retorna True si la operación es exitosa, o False en caso contrario.
         """
@@ -29,10 +30,10 @@ class ClienteManager:
             if conexion is None:
                 return False
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             sql = """
-                INSERT INTO clientes (nombre, apellido, cuil, telefono, email, direccion)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                INSERT INTO clientes (nombre, apellido, `cuil-cuit`, telefono, email, direccion, iva)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             datos = (
                 cliente["nombre"],
@@ -40,7 +41,8 @@ class ClienteManager:
                 cliente["cuil"],
                 cliente.get("telefono", ""),
                 cliente.get("email", ""),
-                cliente.get("direccion", "")
+                cliente.get("direccion", ""),
+                cliente.get("iva", "")
             )
             cursor.execute(sql, datos)
             conexion.commit()
@@ -54,7 +56,9 @@ class ClienteManager:
     def obtener_clientes(self) -> list:
         """
         Retorna una lista con todos los clientes registrados en la base de datos.
-        Cada cliente se retorna como un diccionario.
+        Cada cliente se retorna como un diccionario, incluyendo el campo 'iva'.
+        Se utiliza un alias (`AS cuil`) para extraer la columna `cuil-cuit`
+        y trabajar con ella de forma uniforme en el código.
         """
         clientes = []
         try:
@@ -62,8 +66,10 @@ class ClienteManager:
             if conexion is None:
                 return clientes
             cursor = conexion.cursor(dictionary=True)
-            cursor.execute("USE ventas_db")
-            cursor.execute("SELECT clienteId, nombre, apellido, cuil, telefono, email, direccion FROM clientes")
+            cursor.execute("USE farmanaccio_db")
+            cursor.execute(
+                "SELECT clienteId, nombre, apellido, `cuil-cuit` AS cuil, telefono, email, direccion, iva FROM clientes"
+            )
             clientes = cursor.fetchall()
             cursor.close()
             conexion.close()
@@ -74,16 +80,18 @@ class ClienteManager:
     def actualizar_cliente(self, clienteId: int, cliente: dict) -> bool:
         """
         Actualiza los datos del cliente identificado por 'clienteId' con la información proveída en 'cliente'.
+        Se actualizan los campos: nombre, apellido, cuil, telefono, email, direccion y iva.
+        La columna de cuil se actualiza usando el nombre real en la BD (`cuil-cuit`).
         """
         try:
             conexion = ConexionBD.obtener_conexion()
             if conexion is None:
                 return False
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             sql = """
                 UPDATE clientes
-                SET nombre = %s, apellido = %s, cuil = %s, telefono = %s, email = %s, direccion = %s
+                SET nombre = %s, apellido = %s, `cuil-cuit` = %s, telefono = %s, email = %s, direccion = %s, iva = %s
                 WHERE clienteId = %s
             """
             datos = (
@@ -93,6 +101,7 @@ class ClienteManager:
                 cliente.get("telefono", ""),
                 cliente.get("email", ""),
                 cliente.get("direccion", ""),
+                cliente.get("iva", ""),
                 clienteId
             )
             cursor.execute(sql, datos)
@@ -113,7 +122,7 @@ class ClienteManager:
             if conexion is None:
                 return False
             cursor = conexion.cursor()
-            cursor.execute("USE ventas_db")
+            cursor.execute("USE farmanaccio_db")
             sql = "DELETE FROM clientes WHERE clienteId = %s"
             cursor.execute(sql, (clienteId,))
             conexion.commit()
@@ -135,7 +144,8 @@ if __name__ == "__main__":
         "cuil": "20-87654321-9",
         "telefono": "555-6789",
         "email": "ana@example.com",
-        "direccion": "Av. Siempre Viva 742"
+        "direccion": "Av. Siempre Viva 742",
+        "iva": "Monotributo"  # Este valor se puede dejar vacío o definirse según el caso
     }
     if cm.crear_cliente(cliente_ejemplo):
         print("Cliente creado exitosamente.")
