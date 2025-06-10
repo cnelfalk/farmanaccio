@@ -1,8 +1,7 @@
-# stock_window.py
 import customtkinter as ctk
 from gui.login import icono_logotipo
 from tkinter import ttk, messagebox, font as tkFont
-from tkcalendar import DateEntry
+from tkcalendar import DateEntry  
 from utils.utilidades import Utilidades
 from logica.gestor_vademecum import VademecumManager
 from logica.gestor_stock import StockManager
@@ -20,17 +19,9 @@ class CustomDateEntry(DateEntry):
         top = super()._drop_down()
         top.unbind("<FocusOut>")
         return top
-
 # --- Fin integración de CustomDateEntry ---
 
-
 class StockWindow(ctk.CTkToplevel):
-    """
-    Ventana para el control de stock.
-    Permite elegir entre dos modos:
-      - "Stock": muestra el inventario agrupado y oculta campos extras.
-      - "Vademécum": muestra el catálogo importado y se muestran campos extras.
-    """
     def __init__(self, master=None):
         super().__init__(master)
         self.title("Control de Stock")
@@ -58,7 +49,7 @@ class StockWindow(ctk.CTkToplevel):
         self.frame_busqueda.pack(fill="x", padx=10, pady=5)
         self.combo_busqueda = ctk.CTkComboBox(
             self.frame_busqueda,
-            values=["Stock", "Vademécum"],
+            values=["Vademécum", "Stock", "Archivado"],  # Tres opciones
             width=120,
             command=lambda origen: self.cambiar_origen(origen)
         )
@@ -93,7 +84,6 @@ class StockWindow(ctk.CTkToplevel):
         self.tree.configure(yscrollcommand=self.vscrollbar.set, xscrollcommand=self.hscrollbar.set)
         self.frame_tabla.rowconfigure(0, weight=1)
         self.frame_tabla.columnconfigure(0, weight=1)
-        
         self.tree.bind("<Double-1>", self.mostrar_detalles)
         self.tree.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
         
@@ -133,7 +123,7 @@ class StockWindow(ctk.CTkToplevel):
                                                  background="lightblue",
                                                  foreground="black",
                                                  bordercolor="red")
-        # Posicionar estos widgets (modo Vademécum)
+        # Posicionar widgets para la vista de Stock/Vademécum 
         self.label_stock.grid(row=2, column=0, padx=10, pady=5, sticky="e")
         self.frame_stock.grid(row=2, column=1, padx=10, pady=5, sticky="w")
         self.label_lote.grid(row=3, column=0, padx=10, pady=5, sticky="e")
@@ -156,8 +146,11 @@ class StockWindow(ctk.CTkToplevel):
         self.btn_eliminar.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
         
         self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy)
-        self.btn_volver.pack(padx=5, pady=(0,8))
+        self.btn_volver.pack(padx=5, pady=(0, 8))
         
+        # Inicializamos el botón de restaurar a None
+        self.btn_restaurar = None
+
         self.cargar_datos_iniciales()
         self.after(150, lambda: self.iconbitmap(icono_logotipo))
     
@@ -175,7 +168,9 @@ class StockWindow(ctk.CTkToplevel):
             self.entry_lote.grid_remove()
             self.label_vencimiento.grid_remove()
             self.entry_vencimiento.grid_remove()
-        else:
+            if hasattr(self, "btn_restaurar") and self.btn_restaurar:
+                self.btn_restaurar.pack_forget()
+        elif origen == "Vademécum":
             columns = ("Nombre Comercial", "Presentación", "Acción Farmacológica", "Principio Activo", "Laboratorio")
             self.btn_modificar.configure(state="disabled")
             self.btn_eliminar.configure(state="disabled")
@@ -185,6 +180,21 @@ class StockWindow(ctk.CTkToplevel):
             self.entry_lote.grid(row=3, column=1, padx=10, pady=5, sticky="w")
             self.label_vencimiento.grid(row=4, column=0, padx=10, pady=5, sticky="e")
             self.entry_vencimiento.grid(row=4, column=1, padx=10, pady=5, sticky="w")
+            if hasattr(self, "btn_restaurar") and self.btn_restaurar:
+                self.btn_restaurar.pack_forget()
+        elif origen == "Archivado":
+            columns = ("ID", "Nombre", "Precio", "Stock", "Acciones")
+            self.btn_modificar.configure(state="disabled")
+            self.btn_eliminar.configure(state="disabled")
+            self.label_stock.grid_remove()
+            self.frame_stock.grid_remove()
+            self.label_lote.grid_remove()
+            self.entry_lote.grid_remove()
+            self.label_vencimiento.grid_remove()
+            self.entry_vencimiento.grid_remove()
+            if not hasattr(self, "btn_restaurar") or self.btn_restaurar is None:
+                self.btn_restaurar = ctk.CTkButton(self, text="Restaurar Producto", command=self.restaurar_producto)
+            self.btn_restaurar.pack(pady=5)
         self.tree["columns"] = columns
         for col in columns:
             self.tree.heading(col, text=col)
@@ -196,13 +206,17 @@ class StockWindow(ctk.CTkToplevel):
                 self.tree.column(col, width=100)
             elif col == "Disponibilidad":
                 self.tree.column(col, width=120, anchor="center")
+            elif col == "Acciones":
+                self.tree.column(col, width=120, anchor="center")
             else:
                 self.tree.column(col, width=150)
         self.tree.delete(*self.tree.get_children())
-        if self.combo_busqueda.get() == "Stock":
+        if origen == "Stock":
             self.cargar_productos()
-        else:
+        elif origen == "Vademécum":
             self.cargar_vademecum()
+        elif origen == "Archivado":
+            self.cargar_productos_archivados()
     
     def cargar_datos_iniciales(self):
         self.cambiar_origen(self.combo_busqueda.get())
@@ -234,7 +248,7 @@ class StockWindow(ctk.CTkToplevel):
                 else:
                     self.tree.item(item, tags=("ok",))
             self.ajustar_ancho_columnas()
-        else:
+        elif origen == "Vademécum":
             registros = self.vademecum_manager.buscar_vademecum(termino)
             for r in registros:
                 self.tree.insert("", "end", values=(r["nombreComercial"],
@@ -243,6 +257,8 @@ class StockWindow(ctk.CTkToplevel):
                                                      r["principioActivo"],
                                                      r["laboratorio"]))
             self.ajustar_ancho_columnas()
+        elif origen == "Archivado":
+            self.cargar_productos_archivados()
     
     def cargar_productos(self):
         self.tree.delete(*self.tree.get_children())
@@ -276,6 +292,19 @@ class StockWindow(ctk.CTkToplevel):
                                                  r["accionFarmacologica"],
                                                  r["principioActivo"],
                                                  r["laboratorio"]))
+        self.ajustar_ancho_columnas()
+    
+    def cargar_productos_archivados(self):
+        self.tree.delete(*self.tree.get_children())
+        productos = self.stock_manager.obtener_productos_archivados()
+        for prod in productos:
+            item = self.tree.insert("", "end", values=(
+                prod["prodId"],
+                prod["nombre"],
+                prod["precio"],
+                prod["stock"],
+                "Restaurar"
+            ))
         self.ajustar_ancho_columnas()
     
     def ajustar_ancho_columnas(self):
@@ -355,18 +384,15 @@ class StockWindow(ctk.CTkToplevel):
         stock_text = self.entry_stock.get().strip()
         lote = self.entry_lote.get().strip()
         vencimiento = self.entry_vencimiento.get_date().isoformat()
-
         if not nombre or not precio_text or not stock_text or not vencimiento:
             messagebox.showwarning("Campos Vacíos", "Por favor, complete los campos obligatorios.")
             return
-
         try:
             precio = float(precio_text)
             stock = int(stock_text)
         except ValueError:
             messagebox.showerror("Error de Datos", "El precio y el stock deben ser numéricos.")
             return
-
         producto = {
             "nombre": nombre,
             "precio": precio,
@@ -374,7 +400,6 @@ class StockWindow(ctk.CTkToplevel):
             "lote": lote,
             "vencimiento": vencimiento
         }
-
         if self.stock_manager.agregar_o_actualizar_producto(producto):
             messagebox.showinfo("Éxito", "Producto agregado/actualizado correctamente.")
             self.combo_busqueda.set("Stock")
@@ -393,10 +418,8 @@ class StockWindow(ctk.CTkToplevel):
             messagebox.showerror("Error", "Por favor, seleccione un producto para modificar.")
             return
         product_id = self.tree.item(selected, "values")[0]
-        
         nombre = self.entry_nombre.get().strip()
         precio_text = self.entry_precio.get().strip()
-
         if not nombre or not precio_text:
             messagebox.showwarning("Campos Vacíos", "Ingrese nombre y precio para modificar.")
             return
@@ -405,7 +428,6 @@ class StockWindow(ctk.CTkToplevel):
         except ValueError:
             messagebox.showerror("Error de Datos", "El precio debe ser numérico.")
             return
-
         if self.stock_manager.modificar_producto(self, product_id, {"nombre": nombre, "precio": precio}):
             messagebox.showinfo("Éxito", "Producto modificado correctamente.")
             self.cargar_productos()
@@ -424,7 +446,30 @@ class StockWindow(ctk.CTkToplevel):
                 self.cargar_productos()
             else:
                 messagebox.showerror("Error", "No se pudo eliminar el producto.")
-
+    
+    def restaurar_producto(self):
+        selected_item = self.tree.focus()
+        if not selected_item:
+            messagebox.showwarning("Atención", "Seleccione un producto para restaurar.", parent=self)
+            return
+        valores = self.tree.item(selected_item, "values")
+        prod_id = valores[0]
+        if not messagebox.askyesno("Confirmar", "¿Desea restaurar este producto?"):
+            return
+        try:
+            from datos.conexion_bd import ConexionBD
+            conexion = ConexionBD.obtener_conexion()
+            cursor = conexion.cursor()
+            cursor.execute("USE farmanaccio_db")
+            cursor.execute("UPDATE productos SET activo = 1 WHERE prodId = %s", (prod_id,))
+            conexion.commit()
+            cursor.close()
+            conexion.close()
+            messagebox.showinfo("Éxito", "Producto restaurado correctamente.")
+            self.cargar_productos_archivados()
+        except Exception as ex:
+            messagebox.showerror("Error", str(ex))
+    
 if __name__ == "__main__":
     app = StockWindow()
     app.mainloop()

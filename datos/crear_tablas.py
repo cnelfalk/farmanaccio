@@ -1,4 +1,5 @@
-# src/datos/crear_tablas.py
+# src/crear_tablas.py
+
 from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
 
@@ -70,13 +71,14 @@ class TablaCreator:
             """
             cursor.execute(sentencia_usuarios)
 
-            # Tabla clientes (se modifica para que 'cuil' y 'iva' sean UNIQUE)
+            # Tabla clientes  
+            # Se modifica para que, en lugar de cuil, se llame `cuil-cuit`
             sentencia_clientes = """
                 CREATE TABLE IF NOT EXISTS clientes (
                     clienteId INT AUTO_INCREMENT PRIMARY KEY,
                     nombre VARCHAR(100) NOT NULL,
                     apellido VARCHAR(100) NOT NULL,
-                    cuil VARCHAR(20) NOT NULL UNIQUE,
+                    `cuil-cuit` VARCHAR(20) NOT NULL UNIQUE,
                     telefono VARCHAR(20),
                     email VARCHAR(100),
                     direccion VARCHAR(150),
@@ -111,8 +113,7 @@ class TablaCreator:
             """
             cursor.execute(sentencia_factura_detalles)
 
-            # NUEVAS TABLAS PARA REMITO:
-            # Tabla Remito: los campos cuit_cuil e ivaEstado referencian a clientes(cuil) y clientes(iva)
+            # Tablas para Remito y RemitoDetalle
             sentencia_remito = """
                 CREATE TABLE IF NOT EXISTS Remito (
                     remitoID INT AUTO_INCREMENT PRIMARY KEY,
@@ -126,7 +127,6 @@ class TablaCreator:
             """
             cursor.execute(sentencia_remito)
 
-            # Tabla RemitoDetalle
             sentencia_remito_detalle = """
                 CREATE TABLE IF NOT EXISTS RemitoDetalle (
                     remitoDetalleID INT AUTO_INCREMENT PRIMARY KEY,

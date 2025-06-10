@@ -32,7 +32,7 @@ class ClienteManager:
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
             sql = """
-                INSERT INTO clientes (nombre, apellido, cuil, telefono, email, direccion, iva)
+                INSERT INTO clientes (nombre, apellido, `cuil-cuit`, telefono, email, direccion, iva)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
             datos = (
@@ -57,6 +57,8 @@ class ClienteManager:
         """
         Retorna una lista con todos los clientes registrados en la base de datos.
         Cada cliente se retorna como un diccionario, incluyendo el campo 'iva'.
+        Se utiliza un alias (`AS cuil`) para extraer la columna `cuil-cuit`
+        y trabajar con ella de forma uniforme en el código.
         """
         clientes = []
         try:
@@ -65,7 +67,9 @@ class ClienteManager:
                 return clientes
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("SELECT clienteId, nombre, apellido, cuil, telefono, email, direccion, iva FROM clientes")
+            cursor.execute(
+                "SELECT clienteId, nombre, apellido, `cuil-cuit` AS cuil, telefono, email, direccion, iva FROM clientes"
+            )
             clientes = cursor.fetchall()
             cursor.close()
             conexion.close()
@@ -77,6 +81,7 @@ class ClienteManager:
         """
         Actualiza los datos del cliente identificado por 'clienteId' con la información proveída en 'cliente'.
         Se actualizan los campos: nombre, apellido, cuil, telefono, email, direccion y iva.
+        La columna de cuil se actualiza usando el nombre real en la BD (`cuil-cuit`).
         """
         try:
             conexion = ConexionBD.obtener_conexion()
@@ -86,7 +91,7 @@ class ClienteManager:
             cursor.execute("USE farmanaccio_db")
             sql = """
                 UPDATE clientes
-                SET nombre = %s, apellido = %s, cuil = %s, telefono = %s, email = %s, direccion = %s, iva = %s
+                SET nombre = %s, apellido = %s, `cuil-cuit` = %s, telefono = %s, email = %s, direccion = %s, iva = %s
                 WHERE clienteId = %s
             """
             datos = (

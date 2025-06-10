@@ -329,6 +329,27 @@ class StockManager:
         except Error as e:
             messagebox.showerror("Error al eliminar producto:", e)
         return False
+    
+    def obtener_productos_archivados(self) -> list:
+        """
+        Retorna una lista de productos inactivos (activo = 0) de la tabla productos.
+        """
+        productos = []
+        try:
+            from datos.conexion_bd import ConexionBD
+            conexion = ConexionBD.obtener_conexion()
+            if conexion:
+                cursor = conexion.cursor(dictionary=True)
+                cursor.execute("USE farmanaccio_db")
+                cursor.execute("SELECT prodId, nombre, precio, stock FROM productos WHERE activo = 0")
+                productos = cursor.fetchall()
+                cursor.close()
+                conexion.close()
+            return productos
+        except Exception as e:
+            messagebox.showerror("Error al obtener productos archivados:", str(e))
+            return productos
+
 
 # Ejemplo de uso:
 if __name__ == "__main__":

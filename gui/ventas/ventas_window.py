@@ -229,12 +229,13 @@ class VentasWindow(ctk.CTkToplevel):
         self.wait_window(ventana_clientes)
         cliente = ventana_clientes.selected_cliente
         if cliente:
-            if (cliente.get("direccion") and cliente.get("cuit") and cliente.get("iva") and 
+            # Se revisa que el cliente tenga dirección, cuil (alias) e iva, y que su nombre no sea "Anónimo"
+            if (cliente.get("direccion") and cliente.get("cuil") and cliente.get("iva") and 
                 cliente.get("nombre").strip().lower() != "anónimo"):
                 self.cliente_remito = {
                     "nombre": f"{cliente.get('nombre')} {cliente.get('apellido')}",
                     "direccion": cliente.get("direccion"),
-                    "cuit": cliente.get("cuil"),
+                    "cuit": cliente.get("cuil"),  # Usamos la clave 'cuil'
                     "iva": cliente.get("iva")
                 }
                 self.lbl_cliente.configure(text=f"Cliente: {self.cliente_remito['nombre']}")
@@ -242,8 +243,8 @@ class VentasWindow(ctk.CTkToplevel):
                 self.btn_asignar_venc.configure(state="normal")
             else:
                 messagebox.showwarning("Cliente Incompleto",
-                                       "El cliente seleccionado no tiene la información obligatoria para generar remito. Se restablecerá a 'Anónimo'.",
-                                       parent=self)
+                                        "El cliente seleccionado no tiene la información obligatoria para generar remito. Se restablecerá a 'Anónimo'.",
+                                        parent=self)
                 self.cliente_remito = {"nombre": "Anónimo", "direccion": "", "cuit": "", "iva": ""}
                 self.lbl_cliente.configure(text="Cliente: Anónimo")
                 self.chk_remito.configure(state="disabled")
