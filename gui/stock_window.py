@@ -1,3 +1,4 @@
+# src/gui/stock_window.py
 import customtkinter as ctk
 from gui.login import icono_logotipo
 from tkinter import ttk, messagebox, font as tkFont
@@ -61,17 +62,12 @@ class StockWindow(ctk.CTkToplevel):
             placeholder_text="Buscar producto..."
         )
         self.entry_busqueda.pack(side="left", padx=(0, 5))
-        self.btn_busqueda = ctk.CTkButton(
-            self.frame_busqueda,
-            text="Buscar",
-            command=self.buscar_productos
-        )
+        self.btn_busqueda = ctk.CTkButton(self.frame_busqueda, text="Buscar", command=self.buscar_productos)
         self.btn_busqueda.pack(side="left", padx=5)
         
         # --- Sección de tabla ---
         self.frame_tabla = ctk.CTkFrame(self)
         self.frame_tabla.pack(fill="both", expand=True, padx=20, pady=(5, 10))
-        
         self.tree = ttk.Treeview(self.frame_tabla, show="headings")
         self.tree.grid(row=0, column=0, sticky="nsew")
         self.tree.tag_configure("critical", background="#ffcccc", foreground="#660000")
@@ -93,13 +89,17 @@ class StockWindow(ctk.CTkToplevel):
         self.frame_form.grid_columnconfigure(0, weight=1)
         self.frame_form.grid_columnconfigure(1, weight=1)
         
-        ctk.CTkLabel(self.frame_form, text="Nombre:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+        # Guardamos referencias a los campos "Nombre" y "Precio"
+        self.label_nombre = ctk.CTkLabel(self.frame_form, text="Nombre:")
+        self.label_nombre.grid(row=0, column=0, padx=10, pady=5, sticky="e")
         self.entry_nombre = ctk.CTkEntry(self.frame_form, width=400)
         self.entry_nombre.grid(row=0, column=1, padx=10, pady=5, sticky="w")
-        ctk.CTkLabel(self.frame_form, text="Precio:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
+        self.label_precio = ctk.CTkLabel(self.frame_form, text="Precio:")
+        self.label_precio.grid(row=1, column=0, padx=10, pady=5, sticky="e")
         self.entry_precio = ctk.CTkEntry(self.frame_form, width=400)
         self.entry_precio.grid(row=1, column=1, padx=10, pady=5, sticky="w")
         
+        # Continuación del formulario (campos propios de Stock y Vademécum)
         self.label_stock = ctk.CTkLabel(self.frame_form, text="Stock:")
         self.frame_stock = ctk.CTkFrame(self.frame_form)
         self.frame_stock.grid_columnconfigure(0, weight=0)
@@ -123,7 +123,7 @@ class StockWindow(ctk.CTkToplevel):
                                                  background="lightblue",
                                                  foreground="black",
                                                  bordercolor="red")
-        # Posicionar widgets para la vista de Stock/Vademécum 
+        # Posicionamiento para Stock/Vademécum (inicialmente visibles)
         self.label_stock.grid(row=2, column=0, padx=10, pady=5, sticky="e")
         self.frame_stock.grid(row=2, column=1, padx=10, pady=5, sticky="w")
         self.label_lote.grid(row=3, column=0, padx=10, pady=5, sticky="e")
@@ -131,26 +131,27 @@ class StockWindow(ctk.CTkToplevel):
         self.label_vencimiento.grid(row=4, column=0, padx=10, pady=5, sticky="e")
         self.entry_vencimiento.grid(row=4, column=1, padx=10, pady=5, sticky="w")
         
-        # Contenedor de botones CRUD
+        # Contenedor de botones CRUD (fondo oscuro)
         self.frame_btns = ctk.CTkFrame(self.frame_form, fg_color="#2E2E2E")
         self.frame_btns.grid(row=5, column=0, columnspan=2, pady=(10, 0), sticky="ew")
+        # Se configuran tres columnas para los botones; en Archivado usaremos columnspan para centrar.
         self.frame_btns.grid_columnconfigure(0, weight=1)
         self.frame_btns.grid_columnconfigure(1, weight=1)
         self.frame_btns.grid_columnconfigure(2, weight=1)
-        
+        # Creación de los botones CRUD
         self.btn_agregar = ctk.CTkButton(self.frame_btns, text="Agregar Producto", command=self.agregar)
         self.btn_agregar.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
         self.btn_modificar = ctk.CTkButton(self.frame_btns, text="Modificar Producto", command=self.modificar)
         self.btn_modificar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.btn_eliminar = ctk.CTkButton(self.frame_btns, text="Eliminar Producto", command=self.eliminar)
         self.btn_eliminar.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        # Botón de "Restaurar Producto" (inicialmente fuera de vista)
+        self.btn_restaurar = ctk.CTkButton(self.frame_btns, text="Restaurar Producto", command=self.restaurar_producto)
+        # Nota: No se asigna grid aquí porque se mostrará según el modo Archivado
         
         self.btn_volver = ctk.CTkButton(self, text="Volver", command=self.destroy)
         self.btn_volver.pack(padx=5, pady=(0, 8))
         
-        # Inicializamos el botón de restaurar a None
-        self.btn_restaurar = None
-
         self.cargar_datos_iniciales()
         self.after(150, lambda: self.iconbitmap(icono_logotipo))
     
@@ -158,6 +159,41 @@ class StockWindow(ctk.CTkToplevel):
         self.cargar_productos()
     
     def cambiar_origen(self, origen):
+        # Primero, ocultamos siempre el botón "Restaurar Producto"
+        if hasattr(self, "btn_restaurar") and self.btn_restaurar is not None:
+            self.btn_restaurar.grid_forget()
+        
+        if origen != "Archivado":
+            # Configuración para los otros modos
+            self.btn_agregar.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+            self.btn_modificar.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+            self.btn_eliminar.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+            self.label_nombre.grid()
+            self.entry_nombre.grid()
+            self.label_precio.grid()
+            self.entry_precio.grid()
+            # Restaurar el padding en el frame de botones si fuera necesario
+            self.frame_btns.grid_configure(padx=0, pady=0)
+        else:
+            # En modo Archivado:
+            self.btn_agregar.grid_forget()
+            self.btn_modificar.grid_forget()
+            self.btn_eliminar.grid_forget()
+            self.label_nombre.grid_remove()
+            self.entry_nombre.grid_remove()
+            self.label_precio.grid_remove()
+            self.entry_precio.grid_remove()
+
+            # Configuramos el frame de botones para tener un padding extra
+            self.frame_btns.grid_configure(padx=10, pady=10)
+            # Hacemos que el frame se encoja en función de sus hijos:
+            self.frame_btns.grid_propagate(True)
+            
+            # Posicionamos el botón "Restaurar Producto" sin forzar que se estire:
+            self.btn_restaurar.grid_forget()  # Remover cualquier posicionamiento anterior
+            self.btn_restaurar.grid(row=0, column=1, padx=10, pady=10)  # Sin sticky="ew"
+        
+        # Resto de la configuración de columnas, etc.
         if origen == "Stock":
             columns = ("ID", "Nombre", "Precio", "Stock", "Disponibilidad", "Vencimiento", "Detalle")
             self.btn_modificar.configure(state="normal")
@@ -168,8 +204,7 @@ class StockWindow(ctk.CTkToplevel):
             self.entry_lote.grid_remove()
             self.label_vencimiento.grid_remove()
             self.entry_vencimiento.grid_remove()
-            if hasattr(self, "btn_restaurar") and self.btn_restaurar:
-                self.btn_restaurar.pack_forget()
+            self.cargar_productos()
         elif origen == "Vademécum":
             columns = ("Nombre Comercial", "Presentación", "Acción Farmacológica", "Principio Activo", "Laboratorio")
             self.btn_modificar.configure(state="disabled")
@@ -180,10 +215,9 @@ class StockWindow(ctk.CTkToplevel):
             self.entry_lote.grid(row=3, column=1, padx=10, pady=5, sticky="w")
             self.label_vencimiento.grid(row=4, column=0, padx=10, pady=5, sticky="e")
             self.entry_vencimiento.grid(row=4, column=1, padx=10, pady=5, sticky="w")
-            if hasattr(self, "btn_restaurar") and self.btn_restaurar:
-                self.btn_restaurar.pack_forget()
+            self.cargar_vademecum()
         elif origen == "Archivado":
-            columns = ("ID", "Nombre", "Precio", "Stock", "Acciones")
+            columns = ("ID", "Nombre", "Precio", "Stock")
             self.btn_modificar.configure(state="disabled")
             self.btn_eliminar.configure(state="disabled")
             self.label_stock.grid_remove()
@@ -192,9 +226,8 @@ class StockWindow(ctk.CTkToplevel):
             self.entry_lote.grid_remove()
             self.label_vencimiento.grid_remove()
             self.entry_vencimiento.grid_remove()
-            if not hasattr(self, "btn_restaurar") or self.btn_restaurar is None:
-                self.btn_restaurar = ctk.CTkButton(self, text="Restaurar Producto", command=self.restaurar_producto)
-            self.btn_restaurar.pack(pady=5)
+            self.cargar_productos_archivados()
+        
         self.tree["columns"] = columns
         for col in columns:
             self.tree.heading(col, text=col)
@@ -210,13 +243,7 @@ class StockWindow(ctk.CTkToplevel):
                 self.tree.column(col, width=120, anchor="center")
             else:
                 self.tree.column(col, width=150)
-        self.tree.delete(*self.tree.get_children())
-        if origen == "Stock":
-            self.cargar_productos()
-        elif origen == "Vademécum":
-            self.cargar_vademecum()
-        elif origen == "Archivado":
-            self.cargar_productos_archivados()
+
     
     def cargar_datos_iniciales(self):
         self.cambiar_origen(self.combo_busqueda.get())
@@ -298,14 +325,14 @@ class StockWindow(ctk.CTkToplevel):
         self.tree.delete(*self.tree.get_children())
         productos = self.stock_manager.obtener_productos_archivados()
         for prod in productos:
-            item = self.tree.insert("", "end", values=(
+            self.tree.insert("", "end", values=(
                 prod["prodId"],
                 prod["nombre"],
                 prod["precio"],
-                prod["stock"],
-                "Restaurar"
+                prod["stock"]
             ))
         self.ajustar_ancho_columnas()
+
     
     def ajustar_ancho_columnas(self):
         tree_font = tkFont.nametofont("TkDefaultFont")

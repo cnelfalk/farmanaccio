@@ -114,13 +114,23 @@ class LoginWindow(ctk.CTk):
 
         um = UsuarioManager()
         user_info = um.validar_usuario(usuario, password)
-        if user_info is not None:
+        if user_info == "inactivo":
+            # El usuario existe y la contraseña es correcta pero está inactivo.
+            CTkMessagebox(
+                title="Error al iniciar sesión",
+                message="El usuario asociado con las credenciales se encuentra inactivo. Consulte con un administrador para rehabilitarlo.",
+                icon="cancel",
+                fade_in_duration=1
+            )
+            return
+        elif user_info is not None:
             self.destroy()
             from gui.main_window import MainWindow
             app = MainWindow(user_info)
             app.mainloop()
         else:
             CTkMessagebox(title="Error", message="Credenciales incorrectas", icon="cancel", fade_in_duration=1)
+
 
 if __name__ == "__main__":
     app = LoginWindow()

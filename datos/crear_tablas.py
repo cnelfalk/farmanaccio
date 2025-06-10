@@ -61,12 +61,13 @@ class TablaCreator:
             cursor.execute(sentencia_lotes)
 
             # Tabla usuarios
-            sentencia_usuarios = """
+            sentencia_usuarios = sentencia_usuarios = """
                 CREATE TABLE IF NOT EXISTS usuarios (
                     userId INT AUTO_INCREMENT PRIMARY KEY,
                     usuario VARCHAR(50) NOT NULL UNIQUE,
                     password VARCHAR(100) NOT NULL,
-                    role ENUM('admin','empleado') NOT NULL
+                    role ENUM('admin','empleado') NOT NULL,
+                    activo TINYINT(1) NOT NULL DEFAULT 1
                 )
             """
             cursor.execute(sentencia_usuarios)

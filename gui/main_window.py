@@ -1,6 +1,7 @@
 # src/gui/main_window.py
 
 import customtkinter as ctk
+from tkinter import Toplevel, Label
 from gui.login import icono_logotipo, mainwin_bg, boton_controlstock, disabledboton_controlstock, boton_gestionventas, boton_gestionclientes
 from utils.utilidades import Utilidades
 from PIL import Image
@@ -15,44 +16,93 @@ class MainWindow(ctk.CTk):
         self.resizable(False, False)
         self.iconbitmap(icono_logotipo)
         
-        # Configuramos el fondo­: creamos la imagen y la etiqueta,
-        # y la situamos en toda la ventana, luego la dejamos en el fondo.
+        # Configuramos el fondo (imagen y label de fondo)
         self.bg_image = CTkImage(
             Image.open(mainwin_bg),
-            size=(280, 330)  # Usamos las dimensiones de la ventana principal
+            size=(280, 330)
         )
         self.bg_label = ctk.CTkLabel(self, image=self.bg_image, text="")
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.bg_label.lower()  # Mandamos el fondo al fondo de la jerarquía de widgets
+        self.bg_label.lower()
 
         # Dimensiones de la ventana principal
         window_width = 280
         window_height = 330
-
-        # Centramos la ventana
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
         x = int((screen_width - window_width) / 2)
         y = int((screen_height - window_height) / 2)
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
-        # Se asigna el ícono tras 100ms (esto puede repetirse para asegurarse)
         self.after(100, lambda: self.iconbitmap(icono_logotipo))
 
         # --- HEADER: Contenedor superior con botones de usuario y opciones ---
         self.header_frame = ctk.CTkFrame(self, height=50, fg_color="transparent")
         self.header_frame.pack(side="top", anchor="w", pady=10, padx=10)
+        
+        # Función interna para truncar el texto si es demasiado largo.
+        def truncar_texto(texto, longitud_maxima):
+            if len(texto) > longitud_maxima:
+                return texto[:longitud_maxima - 3] + "..."
+            return texto
 
+        usuario_completo = self.user_info["usuario"].title()
+        usuario_mostrado = truncar_texto(usuario_completo, 10)
+        
         # Botón del usuario
         self.user_button = ctk.CTkButton(
             self.header_frame,
-            text=f"👤 {self.user_info['usuario'].title()}",
+            text=f"👤 {usuario_mostrado}",
             fg_color="#757033",
             command=self.toggle_user_menu
         )
         self.user_button.pack(side="left", padx=5, pady=5)
 
-        # Botón de opciones con un ícono de engranaje (se usa el carácter "⚙")
+        # Variables para controlar el tooltip
+        self._tooltip_id = None
+        self.tooltip = None
+        self._tooltip_delay = 500  # milisegundos de retardo
+
+        # Función para programar la aparición del tooltip
+        def schedule_tooltip(event):
+            self.unschedule_tooltip()  # cancelar cualquier tooltip pendiente
+            self._tooltip_id = self.user_button.after(self._tooltip_delay, show_tooltip)
+
+        # Función que crea el tooltip (si aún no exista)
+        def show_tooltip():
+            if self.tooltip is not None:
+                return  # Ya se mostró
+            x = self.user_button.winfo_rootx() + 20
+            y = self.user_button.winfo_rooty() + self.user_button.winfo_height() + 10
+            self.tooltip = Toplevel(self)
+            self.tooltip.wm_overrideredirect(True)
+            self.tooltip.wm_geometry("+%d+%d" % (x, y))
+            label = Label(self.tooltip, text=usuario_completo, justify='left',
+                          background="#ffffe0", relief='solid', borderwidth=1,
+                          font=("tahoma", 8, "normal"))
+            label.pack(ipadx=5, ipady=3)
+
+        # Función para destruir el tooltip
+        def hide_tooltip(event):
+            self.unschedule_tooltip()
+            if self.tooltip:
+                self.tooltip.destroy()
+                self.tooltip = None
+
+        # Función para cancelar el "after" programado
+        def unschedule_tooltip():
+            if self._tooltip_id:
+                self.user_button.after_cancel(self._tooltip_id)
+                self._tooltip_id = None
+
+        # Asignamos las funciones a los eventos del botón
+        self.user_button.bind("<Enter>", schedule_tooltip)
+        self.user_button.bind("<Leave>", hide_tooltip)
+        self.user_button.bind("<ButtonPress>", hide_tooltip)
+        # También guardamos las funciones internamente para poder llamarlas desde otras funciones
+        self.unschedule_tooltip = unschedule_tooltip
+
+        # Botón de opciones (ícono de engranaje)
         self.btn_options = ctk.CTkButton(
             self.header_frame,
             text="⚙",
@@ -180,8 +230,8 @@ class MainWindow(ctk.CTk):
         self.wait_window(ventana_clientes)
         self.deiconify()
 
-# Ejemplo de uso:
+
 if __name__ == "__main__":
-    user_info = {"usuario": "admin", "role": "admin"}
+    user_info = {"usuario": "UnUsuarioMuyLargo", "role": "admin"}
     app = MainWindow(user_info)
     app.mainloop()

@@ -1,4 +1,3 @@
-# src/logica/gestor_usuarios.py
 from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
 
@@ -9,54 +8,48 @@ class UsuarioManager:
       - Validar credenciales.
       - Crear un nuevo usuario.
       - Obtener todos los usuarios.
-      - Eliminar un usuario.
-      - Actualizar los datos de un usuario.
+      - Obtener usuarios por estado (activo/inactivo).
+      - "Eliminar" un usuario (actualizando el campo 'activo' a 0).
+      - Restaurar un usuario (estableciendo 'activo' a 1).
+      - Actualizar datos de un usuario.
     """
 
     def validar_usuario(self, usuario: str, password: str):
-        """
-        Busca en la tabla 'usuarios' un registro que coincida con el usuario y
-        la contraseña. Retorna un diccionario con la información si las credenciales
-        son correctas, o None en caso contrario.
-        """
         try:
             conexion = ConexionBD.obtener_conexion()
             if conexion is None:
                 return None
-
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
             cursor.execute(
-                "SELECT userId, usuario, password, role FROM usuarios WHERE usuario = %s",
+                "SELECT userId, usuario, password, role, activo FROM usuarios WHERE usuario = %s",
                 (usuario,)
             )
             resultado = cursor.fetchone()
             cursor.close()
             conexion.close()
-
-            if resultado and resultado["password"] == password:
-                return resultado
+            if resultado:
+                if resultado["password"] == password:
+                    if resultado.get("activo", 0) != 1:
+                        # Retornamos "inactivo" para distinguir este caso
+                        return "inactivo"
+                    return resultado
             return None
         except Error as e:
             print("Error al validar usuario:", e)
             return None
 
+
+
     def crear_usuario(self, usuario: str, password: str, rol: str) -> bool:
-        """
-        Inserta un nuevo usuario en la base de datos. Retorna True si se creó correctamente,
-        o False en caso de error.
-        """
         try:
             conexion = ConexionBD.obtener_conexion()
             if conexion is None:
                 return False
-
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            cursor.execute(
-                "INSERT INTO usuarios (usuario, password, role) VALUES (%s, %s, %s)",
-                (usuario, password, rol)
-            )
+            cursor.execute("INSERT INTO usuarios (usuario, password, role) VALUES (%s, %s, %s)",
+                           (usuario, password, rol))
             conexion.commit()
             cursor.close()
             conexion.close()
@@ -66,79 +59,99 @@ class UsuarioManager:
             return False
 
     def obtener_usuarios(self) -> list:
-        """
-        Retorna una lista con la información de todos los usuarios existentes en la base de datos.
-        """
         try:
             conexion = ConexionBD.obtener_conexion()
-            cursor = conexion.cursor()
+            cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("SELECT userId, usuario, password, role FROM usuarios")
+            cursor.execute("SELECT userId, usuario, password, role, activo FROM usuarios")
             usuarios = cursor.fetchall()
+            cursor.close()
             conexion.close()
             return usuarios
         except Error as e:
             print("Error al obtener usuarios:", e)
             return []
 
+    def obtener_usuarios_por_estado(self, activo: int) -> list:
+        # Este método es el que filtra según el estado activo (1) o inactivo (0)
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            cursor = conexion.cursor(dictionary=True)
+            cursor.execute("USE farmanaccio_db")
+            cursor.execute("SELECT userId, usuario, password, role, activo FROM usuarios WHERE activo = %s", (activo,))
+            usuarios = cursor.fetchall()
+            cursor.close()
+            conexion.close()
+            return usuarios
+        except Error as e:
+            print("Error al obtener usuarios por estado:", e)
+            return []
+
     def eliminar_usuario(self, id_usuario) -> bool:
-        """
-        Elimina el usuario cuyo identificador sea igual a 'id_usuario'.
-        Retorna True si se eliminó correctamente o False en caso de error.
-        """
+        # Actualiza activo a 0
         try:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("DELETE FROM usuarios WHERE userId = %s", (id_usuario,))
+            cursor.execute("UPDATE usuarios SET activo = 0 WHERE userId = %s", (id_usuario,))
             conexion.commit()
-            return cursor.rowcount > 0
-        except Error:
-            return False
-        finally:
+            affected = cursor.rowcount
+            cursor.close()
             conexion.close()
+            return affected > 0
+        except Error as e:
+            print("Error al eliminar usuario:", e)
+            return False
+
+    def restaurar_usuario(self, id_usuario) -> bool:
+        # Actualiza activo a 1
+        try:
+            conexion = ConexionBD.obtener_conexion()
+            cursor = conexion.cursor()
+            cursor.execute("USE farmanaccio_db")
+            cursor.execute("UPDATE usuarios SET activo = 1 WHERE userId = %s", (id_usuario,))
+            conexion.commit()
+            affected = cursor.rowcount
+            cursor.close()
+            conexion.close()
+            return affected > 0
+        except Error as e:
+            print("Error al restaurar usuario:", e)
+            return False
 
     def actualizar_usuario(self, id_usuario, usuario: str, password: str, rol: str) -> bool:
-        """
-        Actualiza los datos del usuario identificado por 'id_usuario'. Retorna True si se actualizó con éxito,
-        o False en caso contrario.
-        """
         try:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
             cursor.execute(
-                """
-                UPDATE usuarios 
-                SET usuario = %s, password = %s, role = %s 
-                WHERE userId = %s
-                """,
+                "UPDATE usuarios SET usuario = %s, password = %s, role = %s WHERE userId = %s",
                 (usuario, password, rol, id_usuario)
             )
             conexion.commit()
-            return cursor.rowcount > 0
-        except Error:
-            return False
-        finally:
+            affected = cursor.rowcount
+            cursor.close()
             conexion.close()
+            return affected > 0
+        except Error as e:
+            print("Error al actualizar usuario:", e)
+            return False
 
-# Ejemplo de uso:
 if __name__ == "__main__":
     um = UsuarioManager()
-    
-    # Validar credenciales (por ejemplo, usuario "admin" con contraseña "admin")
+    # Prueba de validación
     user = um.validar_usuario("admin", "admin")
-    if user:
-        print("Usuario validado:", user)
-    else:
-        print("Credenciales incorrectas")
-    
-    # Crear un nuevo usuario:
+    print("Usuario validado:", user)
+
+    # Prueba de creación
     if um.crear_usuario("nuevo_usuario", "pass123", "empleado"):
         print("Usuario creado exitosamente.")
     else:
         print("Error al crear usuario.")
-    
-    # Obtener la lista de usuarios
-    usuarios = um.obtener_usuarios()
-    print("Usuarios:", usuarios)
+
+    print("Todos los usuarios:")
+    print(um.obtener_usuarios())
+    print("Usuarios activos:")
+    print(um.obtener_usuarios_por_estado(1))
+    print("Usuarios inactivos:")
+    print(um.obtener_usuarios_por_estado(0))
