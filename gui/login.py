@@ -49,6 +49,10 @@ class LoginWindow(ctk.CTk):
         self.bg_label = ctk.CTkLabel(self, image=self.bg_image, text="")
         self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
 
+        # Botón de salir en la esquina superior izquierda
+        self.btn_salir = ctk.CTkButton(self, text="×", command=self.exit_app, fg_color="#0A4C0A", hover_color="#052605", width=30)
+        self.btn_salir.place(x=308, y=8)
+
         # Imagen de fondo detrás del label "Ingrese sus credenciales"
         self.bg_credenciales = CTkImage(
             Image.open(login_ingresesuscredenciales),
@@ -115,7 +119,6 @@ class LoginWindow(ctk.CTk):
         um = UsuarioManager()
         user_info = um.validar_usuario(usuario, password)
         if user_info == "inactivo":
-            # El usuario existe y la contraseña es correcta pero está inactivo.
             CTkMessagebox(
                 title="Error al iniciar sesión",
                 message="El usuario asociado con las credenciales se encuentra inactivo. Consulte con un administrador para rehabilitarlo.",
@@ -130,7 +133,9 @@ class LoginWindow(ctk.CTk):
             app.mainloop()
         else:
             CTkMessagebox(title="Error", message="Credenciales incorrectas", icon="cancel", fade_in_duration=1)
-
+    
+    def exit_app(self):
+        self.destroy()
 
 if __name__ == "__main__":
     app = LoginWindow()
