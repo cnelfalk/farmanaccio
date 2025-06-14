@@ -260,7 +260,7 @@ class StockWindow(ctk.CTkToplevel):
                 venc = p.get("vencimiento_proximo") or ""
                 estado = p.get("estado", self.inventario_manager._calcular_estado(p.get("total_stock", 0))[0])
                 item = self.tree.insert("", "end", values=(
-                    p["prodId"],
+                    p["prodID"],
                     p["nombre"],
                     p["precio"],
                     p["total_stock"],
@@ -294,7 +294,7 @@ class StockWindow(ctk.CTkToplevel):
             venc = p.get("vencimiento_proximo") or ""
             estado = p.get("estado", self.inventario_manager._calcular_estado(p.get("total_stock", 0))[0])
             item = self.tree.insert("", "end", values=(
-                p["prodId"],
+                p["prodID"],
                 p["nombre"],
                 p["precio"],
                 p["total_stock"],
@@ -326,7 +326,7 @@ class StockWindow(ctk.CTkToplevel):
         productos = self.stock_manager.obtener_productos_archivados()
         for prod in productos:
             self.tree.insert("", "end", values=(
-                prod["prodId"],
+                prod["prodID"],
                 prod["nombre"],
                 prod["precio"],
                 prod["stock"]
@@ -350,20 +350,20 @@ class StockWindow(ctk.CTkToplevel):
         col = self.tree.identify_column(event.x)
         if item and col == "#7":  # Columna "Detalle"
             values = self.tree.item(item, "values")
-            prodId = values[0]
-            self.abrir_detalles_producto(prodId, values)
+            prodID = values[0]
+            self.abrir_detalles_producto(prodID, values)
     
-    def abrir_detalles_producto(self, prodId, valores):
+    def abrir_detalles_producto(self, prodID, valores):
         detalles_generales = self.inventario_manager.obtener_detalles_generales_producto(valores[1])
         producto = {
-            "prodId": prodId,
+            "prodID": prodID,
             "nombre": valores[1],
             "presentacion": detalles_generales.get("presentacion", "No Disponible"),
             "accionFarmacologica": detalles_generales.get("accionFarmacologica", "No Disponible"),
             "principioActivo": detalles_generales.get("principioActivo", "No Disponible"),
             "laboratorio": detalles_generales.get("laboratorio", "No Disponible")
         }
-        detalles = self.inventario_manager.obtener_detalle_lotes(prodId)
+        detalles = self.inventario_manager.obtener_detalle_lotes(prodID)
         if not detalles:
             messagebox.showinfo("Detalle", "No se encontraron detalles de lotes para este producto.", parent=self)
             return
@@ -488,7 +488,7 @@ class StockWindow(ctk.CTkToplevel):
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("UPDATE productos SET activo = 1 WHERE prodId = %s", (prod_id,))
+            cursor.execute("UPDATE productos SET activo = 1 WHERE prodID = %s", (prod_id,))
             conexion.commit()
             cursor.close()
             conexion.close()

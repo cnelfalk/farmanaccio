@@ -9,7 +9,7 @@ from mysql.connector import Error
 import datetime
 
 # Se modifica esta clase para que reciba, además, un diccionario "producto"
-# que contenga (al menos) el prodId.
+# que contenga (al menos) el prodID.
 class DetalleLoteDetalleWindow(ctk.CTkToplevel):
     def __init__(self, master, lote_records, numero_lote, producto):
         super().__init__(master)
@@ -27,7 +27,7 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
         self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
         # Almacenar la información del producto para actualizar luego el campo stock
-        self.producto = producto  # Debe contener, por ejemplo, self.producto["prodId"]
+        self.producto = producto  # Debe contener, por ejemplo, self.producto["prodID"]
 
         self.grab_set()
 
@@ -185,11 +185,11 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
                 SET stock = (
                     SELECT IFNULL(SUM(cantidad_disponible), 0)
                     FROM lotes_productos
-                    WHERE prodId = %s
+                    WHERE prodID = %s
                 )
-                WHERE prodId = %s
+                WHERE prodID = %s
             """
-            cursor.execute(sql_update_productos, (self.producto["prodId"], self.producto["prodId"]))
+            cursor.execute(sql_update_productos, (self.producto["prodID"], self.producto["prodID"]))
             conexion.commit()
             
             cursor.close()
@@ -217,7 +217,7 @@ class DetalleLotesWindow(ctk.CTkToplevel):
         super().__init__(master)
         self.title(f"Detalle de Lotes: {producto.get('nombre')}")
         self.geometry("700x500")
-        self.producto = producto  # Aquí se almacena toda la info del producto, incluido prodId
+        self.producto = producto  # Aquí se almacena toda la info del producto, incluido prodID
         self.detalle_lotes = detalle_lotes
 
         self.grab_set()
@@ -294,7 +294,7 @@ class DetalleLotesWindow(ctk.CTkToplevel):
 # Ejemplo de uso (simulación):
 if __name__ == "__main__":
     producto_ejemplo = {
-        "prodId": 1,
+        "prodID": 1,
         "nombre": "Aspirina",
         "presentacion": "Tabletas de 500 mg",
         "accionFarmacologica": "Analgésico/Antiinflamatorio",

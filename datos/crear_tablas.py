@@ -35,7 +35,7 @@ class TablaCreator:
             # Tabla productos
             sentencia_productos = """
                 CREATE TABLE IF NOT EXISTS productos (
-                    prodId INT AUTO_INCREMENT PRIMARY KEY,
+                    prodID INT AUTO_INCREMENT PRIMARY KEY,
                     nombre VARCHAR(100) NOT NULL,
                     precio DECIMAL(10,2) NOT NULL,
                     stock INT NOT NULL,
@@ -48,14 +48,14 @@ class TablaCreator:
             sentencia_lotes = """
                 CREATE TABLE IF NOT EXISTS lotes_productos (
                     loteID INT AUTO_INCREMENT PRIMARY KEY,
-                    prodId INT NOT NULL,
+                    prodID INT NOT NULL,
                     numeroLote VARCHAR(50) NOT NULL,
                     fechaIngreso DATE NOT NULL,
                     vencimiento DATE NOT NULL,
                     cantidad_ingresada INT NOT NULL,
                     cantidad_disponible INT NOT NULL,
-                    UNIQUE(prodId, numeroLote, fechaIngreso),
-                    FOREIGN KEY (prodId) REFERENCES productos(prodId)
+                    UNIQUE(prodID, numeroLote, fechaIngreso),
+                    FOREIGN KEY (prodID) REFERENCES productos(prodID)
                 )
             """
             cursor.execute(sentencia_lotes)
@@ -63,7 +63,7 @@ class TablaCreator:
             # Tabla usuarios
             sentencia_usuarios = sentencia_usuarios = """
                 CREATE TABLE IF NOT EXISTS usuarios (
-                    userId INT AUTO_INCREMENT PRIMARY KEY,
+                    userID INT AUTO_INCREMENT PRIMARY KEY,
                     usuario VARCHAR(50) NOT NULL UNIQUE,
                     password VARCHAR(100) NOT NULL,
                     role ENUM('admin','empleado') NOT NULL,
@@ -76,7 +76,7 @@ class TablaCreator:
             # Se modifica para que, en lugar de cuil, se llame `cuil-cuit`
             sentencia_clientes = """
                 CREATE TABLE IF NOT EXISTS clientes (
-                    clienteId INT AUTO_INCREMENT PRIMARY KEY,
+                    clienteID INT AUTO_INCREMENT PRIMARY KEY,
                     nombre VARCHAR(100) NOT NULL,
                     apellido VARCHAR(100) NOT NULL,
                     `cuil-cuit` VARCHAR(20) NOT NULL UNIQUE,
@@ -91,7 +91,7 @@ class TablaCreator:
             # Tabla facturas
             sentencia_facturas = """
                 CREATE TABLE IF NOT EXISTS facturas (
-                    facturaId INT AUTO_INCREMENT PRIMARY KEY,
+                    facturaID INT AUTO_INCREMENT PRIMARY KEY,
                     fechaEmision DATE DEFAULT CURRENT_DATE,
                     horaEmision TIME,
                     total_neto DECIMAL(10, 2) NOT NULL,
@@ -104,12 +104,12 @@ class TablaCreator:
             # Tabla factura_detalles
             sentencia_factura_detalles = """
                 CREATE TABLE IF NOT EXISTS factura_detalles (
-                    facturaDetalleId INT AUTO_INCREMENT PRIMARY KEY,
-                    facturaId INT,
-                    prodId INT,
+                    facturaDetalleID INT AUTO_INCREMENT PRIMARY KEY,
+                    facturaID INT,
+                    prodID INT,
                     cantidad INT,
                     precioUnitario DECIMAL(10, 2) NOT NULL,
-                    FOREIGN KEY (facturaId) REFERENCES facturas(facturaId)
+                    FOREIGN KEY (facturaID) REFERENCES facturas(facturaID)
                 )
             """
             cursor.execute(sentencia_factura_detalles)
@@ -123,7 +123,7 @@ class TablaCreator:
                     ivaEstado VARCHAR(50),
                     fechaInicio DATE,
                     vencimientoRemito DATE,
-                    FOREIGN KEY (clienteID) REFERENCES clientes(clienteId)
+                    FOREIGN KEY (clienteID) REFERENCES clientes(clienteID)
                 )
             """
             cursor.execute(sentencia_remito)
@@ -135,7 +135,7 @@ class TablaCreator:
                     prodID INT,
                     cantidad INT,
                     FOREIGN KEY (remitoID) REFERENCES Remito(remitoID),
-                    FOREIGN KEY (prodID) REFERENCES productos(prodId)
+                    FOREIGN KEY (prodID) REFERENCES productos(prodID)
                 )
             """
             cursor.execute(sentencia_remito_detalle)

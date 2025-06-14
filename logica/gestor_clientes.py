@@ -68,7 +68,7 @@ class ClienteManager:
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
             cursor.execute(
-                "SELECT clienteId, nombre, apellido, `cuil-cuit` AS cuil, telefono, email, direccion, iva FROM clientes"
+                "SELECT clienteID, nombre, apellido, `cuil-cuit` AS cuil, telefono, email, direccion, iva FROM clientes"
             )
             clientes = cursor.fetchall()
             cursor.close()
@@ -77,9 +77,9 @@ class ClienteManager:
             messagebox.showerror("Error al obtener clientes", str(e))
         return clientes
 
-    def actualizar_cliente(self, clienteId: int, cliente: dict) -> bool:
+    def actualizar_cliente(self, clienteID: int, cliente: dict) -> bool:
         """
-        Actualiza los datos del cliente identificado por 'clienteId' con la información proveída en 'cliente'.
+        Actualiza los datos del cliente identificado por 'clienteID' con la información proveída en 'cliente'.
         Se actualizan los campos: nombre, apellido, cuil, telefono, email, direccion y iva.
         La columna de cuil se actualiza usando el nombre real en la BD (`cuil-cuit`).
         """
@@ -92,7 +92,7 @@ class ClienteManager:
             sql = """
                 UPDATE clientes
                 SET nombre = %s, apellido = %s, `cuil-cuit` = %s, telefono = %s, email = %s, direccion = %s, iva = %s
-                WHERE clienteId = %s
+                WHERE clienteID = %s
             """
             datos = (
                 cliente["nombre"],
@@ -102,7 +102,7 @@ class ClienteManager:
                 cliente.get("email", ""),
                 cliente.get("direccion", ""),
                 cliente.get("iva", ""),
-                clienteId
+                clienteID
             )
             cursor.execute(sql, datos)
             conexion.commit()
@@ -113,9 +113,9 @@ class ClienteManager:
             messagebox.showerror("Error al actualizar cliente", str(e))
             return False
 
-    def eliminar_cliente(self, clienteId: int) -> bool:
+    def eliminar_cliente(self, clienteID: int) -> bool:
         """
-        Elimina el cliente con el identificador 'clienteId' de la base de datos.
+        Elimina el cliente con el identificador 'clienteID' de la base de datos.
         """
         try:
             conexion = ConexionBD.obtener_conexion()
@@ -123,8 +123,8 @@ class ClienteManager:
                 return False
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            sql = "DELETE FROM clientes WHERE clienteId = %s"
-            cursor.execute(sql, (clienteId,))
+            sql = "DELETE FROM clientes WHERE clienteID = %s"
+            cursor.execute(sql, (clienteID,))
             conexion.commit()
             cursor.close()
             conexion.close()

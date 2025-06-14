@@ -36,15 +36,15 @@ class GestorInventario:
             cursor.execute("USE farmanaccio_db")
             sql = """
                 SELECT 
-                    p.prodId, 
+                    p.prodID, 
                     p.nombre, 
                     p.precio,
                     IFNULL(SUM(l.cantidad_disponible), 0) AS total_stock,
                     MIN(l.vencimiento) AS vencimiento_proximo
                 FROM productos p
-                JOIN lotes_productos l ON p.prodId = l.prodId
+                JOIN lotes_productos l ON p.prodID = l.prodID
                 WHERE p.activo = 1
-                GROUP BY p.prodId, p.nombre, p.precio
+                GROUP BY p.prodID, p.nombre, p.precio
             """
             cursor.execute(sql)
             inventario = cursor.fetchall()
@@ -112,7 +112,7 @@ class GestorInventario:
             }
         return detalles
 
-    def obtener_detalle_lotes(self, prodId: int) -> list:
+    def obtener_detalle_lotes(self, prodID: int) -> list:
         """
         Retorna la lista de lotes asociados a un producto, ordenados por vencimiento.
         Cada lote se retorna como un diccionario con las columnas:
@@ -128,10 +128,10 @@ class GestorInventario:
             sql = """
                 SELECT loteID, numeroLote, fechaIngreso, vencimiento, cantidad_ingresada, cantidad_disponible
                 FROM lotes_productos
-                WHERE prodId = %s
+                WHERE prodID = %s
                 ORDER BY vencimiento ASC
             """
-            cursor.execute(sql, (prodId,))
+            cursor.execute(sql, (prodID,))
             detalles = cursor.fetchall()
             cursor.close()
             conexion.close()
@@ -146,9 +146,9 @@ if __name__ == "__main__":
     print("Inventario agrupado:", inventario)
     
     if inventario:
-        prod_id = inventario[0]["prodId"]
+        prod_id = inventario[0]["prodID"]
         # Suponiendo que el nombre del producto corresponde al 'nombreComercial'
         detalles_generales = gestor.obtener_detalles_generales_producto(inventario[0]["nombre"])
         print("Detalles generales del producto:", detalles_generales)
         detalle_lotes = gestor.obtener_detalle_lotes(prod_id)
-        print(f"Detalle de lotes para prodId {prod_id}:", detalle_lotes)
+        print(f"Detalle de lotes para prodID {prod_id}:", detalle_lotes)

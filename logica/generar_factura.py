@@ -14,19 +14,19 @@ class FacturaGenerator:
     def obtener_factura_y_detalles(self, cursor, factura_id):
         # Recupera datos principales
         cursor.execute("""
-            SELECT facturaId, fechaEmision, horaEmision, total_neto, total_bruto, descuento
+            SELECT facturaID, fechaEmision, horaEmision, total_neto, total_bruto, descuento
             FROM facturas
-            WHERE facturaId = %s
+            WHERE facturaID = %s
         """, (factura_id,))
         factura = cursor.fetchone()
         detalles = []
         if factura:
             # Recupera líneas de detalle
             cursor.execute("""
-                SELECT fd.prodId, p.nombre, fd.cantidad, fd.precioUnitario
+                SELECT fd.prodID, p.nombre, fd.cantidad, fd.precioUnitario
                 FROM factura_detalles fd
-                JOIN productos p ON fd.prodId = p.prodId
-                WHERE fd.facturaId = %s
+                JOIN productos p ON fd.prodID = p.prodID
+                WHERE fd.facturaID = %s
             """, (factura_id,))
             filas = cursor.fetchall()
             for f in filas:
@@ -94,7 +94,7 @@ class FacturaGenerator:
 
             # Construcción de contexto
             ctx = {
-                "facturaId":   datos["facturaId"],
+                "facturaID":   datos["facturaID"],
                 "fecha":       datos["fechaEmision"],
                 "hora":        datos["horaEmision"],
                 "total_bruto": datos["total_bruto"],

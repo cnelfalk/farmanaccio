@@ -24,7 +24,7 @@ class UsuarioManager:
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
             cursor.execute(
-                "SELECT userId, usuario, password, role, activo FROM usuarios WHERE usuario = %s",
+                "SELECT userID, usuario, password, role, activo FROM usuarios WHERE usuario = %s",
                 (usuario,)
             )
             resultado = cursor.fetchone()
@@ -62,7 +62,7 @@ class UsuarioManager:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("SELECT userId, usuario, password, role, activo FROM usuarios")
+            cursor.execute("SELECT userID, usuario, password, role, activo FROM usuarios")
             usuarios = cursor.fetchall()
             cursor.close()
             conexion.close()
@@ -76,7 +76,7 @@ class UsuarioManager:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("SELECT userId, usuario, password, role, activo FROM usuarios WHERE activo = %s", (activo,))
+            cursor.execute("SELECT userID, usuario, password, role, activo FROM usuarios WHERE activo = %s", (activo,))
             usuarios = cursor.fetchall()
             cursor.close()
             conexion.close()
@@ -90,7 +90,7 @@ class UsuarioManager:
             conexion = ConexionBD.obtener_conexion()
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("UPDATE usuarios SET activo = 0 WHERE userId = %s", (id_usuario,))
+            cursor.execute("UPDATE usuarios SET activo = 0 WHERE userID = %s", (id_usuario,))
             conexion.commit()
             affected = cursor.rowcount
             cursor.close()
@@ -108,7 +108,7 @@ class UsuarioManager:
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
             # Actualizamos activo a 1 y asignamos el rol recibido
-            cursor.execute("UPDATE usuarios SET activo = 1, role = %s WHERE userId = %s", (nuevo_rol, id_usuario))
+            cursor.execute("UPDATE usuarios SET activo = 1, role = %s WHERE userID = %s", (nuevo_rol, id_usuario))
             conexion.commit()
             affected = cursor.rowcount
             cursor.close()
@@ -124,7 +124,7 @@ class UsuarioManager:
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
             cursor.execute(
-                "UPDATE usuarios SET usuario = %s, password = %s, role = %s WHERE userId = %s",
+                "UPDATE usuarios SET usuario = %s, password = %s, role = %s WHERE userID = %s",
                 (usuario, password, rol, id_usuario)
             )
             conexion.commit()

@@ -154,9 +154,9 @@ class ClientesWindow(ctk.CTkToplevel):
             self.tree.delete(row)
         self.clientes_map.clear()
         for c in lista_clientes:
-            self.clientes_map[c["clienteId"]] = c
+            self.clientes_map[c["clienteID"]] = c
             self.tree.insert("", "end", values=(
-                c["clienteId"], c["nombre"], c["apellido"], c["cuil"],
+                c["clienteID"], c["nombre"], c["apellido"], c["cuil"],
                 c["telefono"], c["email"], c["direccion"], c.get("iva", "")
             ))
         self._ajustar_ancho_id()

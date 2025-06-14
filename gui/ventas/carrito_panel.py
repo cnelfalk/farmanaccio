@@ -82,7 +82,7 @@ class PanelCarrito(ctk.CTkFrame):
         for item in items:
             subtotal = item["precio"] * item["cantidad"]
             self.tree.insert("", "end", values=(
-                item["prodId"], item["nombre"], item["precio"], item["cantidad"], subtotal
+                item["prodID"], item["nombre"], item["precio"], item["cantidad"], subtotal
             ))
 
     def actualizar_total(self, total, descuento):

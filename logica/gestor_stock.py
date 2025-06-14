@@ -142,12 +142,12 @@ class StockManager:
             cursor = conexion.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
             # Buscar si existe un producto (ignorando mayúsculas)
-            sql_busqueda = "SELECT prodId, stock, activo, precio FROM productos WHERE LOWER(nombre) = LOWER(%s)"
+            sql_busqueda = "SELECT prodID, stock, activo, precio FROM productos WHERE LOWER(nombre) = LOWER(%s)"
             cursor.execute(sql_busqueda, (producto["nombre"],))
             resultado = cursor.fetchone()
             nuevo_stock = producto["stock"]
             if resultado:
-                prodId = resultado["prodId"]
+                prodID = resultado["prodID"]
                 if resultado["activo"] == 1:
                     stock_actual = resultado["stock"]
                     nuevo_stock = stock_actual + producto["stock"]
@@ -176,8 +176,8 @@ class StockManager:
                         elif opcion == "mantener":
                             new_price = resultado["precio"]
 
-                    sql_update = "UPDATE productos SET stock = %s, precio = %s WHERE prodId = %s"
-                    cursor.execute(sql_update, (nuevo_stock, new_price, prodId))
+                    sql_update = "UPDATE productos SET stock = %s, precio = %s WHERE prodID = %s"
+                    cursor.execute(sql_update, (nuevo_stock, new_price, prodID))
                 else:
                     confirmacion = messagebox.askyesno(
                         "Reactivar producto",
@@ -185,26 +185,26 @@ class StockManager:
                         parent=None
                     )
                     if confirmacion:
-                        sql_reactivar = "UPDATE productos SET stock = %s, precio = %s, activo = 1 WHERE prodId = %s"
-                        cursor.execute(sql_reactivar, (nuevo_stock, producto["precio"], prodId))
+                        sql_reactivar = "UPDATE productos SET stock = %s, precio = %s, activo = 1 WHERE prodID = %s"
+                        cursor.execute(sql_reactivar, (nuevo_stock, producto["precio"], prodID))
                     else:
                         sql_insert = "INSERT INTO productos (nombre, precio, stock, activo) VALUES (%s, %s, %s, 1)"
                         cursor.execute(sql_insert, (producto["nombre"], producto["precio"], nuevo_stock))
-                        prodId = cursor.lastrowid
+                        prodID = cursor.lastrowid
             else:
                 sql_insert = "INSERT INTO productos (nombre, precio, stock, activo) VALUES (%s, %s, %s, 1)"
                 cursor.execute(sql_insert, (producto["nombre"], producto["precio"], nuevo_stock))
-                prodId = cursor.lastrowid
+                prodID = cursor.lastrowid
 
             # Procesar la tabla lotes_productos
             lote_valor = producto.get("lote", "")
             sql_verificar_lote = """
                 SELECT loteID, vencimiento, cantidad_ingresada, cantidad_disponible
                 FROM lotes_productos
-                WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
+                WHERE prodID = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
                 LIMIT 1
             """
-            cursor.execute(sql_verificar_lote, (prodId, lote_valor))
+            cursor.execute(sql_verificar_lote, (prodID, lote_valor))
             registro_lote = cursor.fetchone()
             cantidad = producto["stock"]
             nuevo_vencimiento = producto.get("vencimiento", None)
@@ -242,37 +242,37 @@ class StockManager:
                                 SET vencimiento = %s,
                                     cantidad_ingresada = cantidad_ingresada + %s,
                                     cantidad_disponible = cantidad_disponible + %s
-                                WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
-                            """, (nuevo_vencimiento_str, cantidad, cantidad, prodId, lote_valor))
+                                WHERE prodID = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
+                            """, (nuevo_vencimiento_str, cantidad, cantidad, prodID, lote_valor))
                         elif opcion == "continuar":
                             cursor.execute("""
                                 UPDATE lotes_productos
                                 SET cantidad_ingresada = cantidad_ingresada + %s,
                                     cantidad_disponible = cantidad_disponible + %s
-                                WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
-                            """, (cantidad, cantidad, prodId, lote_valor))
+                                WHERE prodID = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
+                            """, (cantidad, cantidad, prodID, lote_valor))
                     else:
                         cursor.execute("""
                             UPDATE lotes_productos
                             SET cantidad_ingresada = cantidad_ingresada + %s,
                                 cantidad_disponible = cantidad_disponible + %s
-                            WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
-                        """, (cantidad, cantidad, prodId, lote_valor))
+                            WHERE prodID = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
+                        """, (cantidad, cantidad, prodID, lote_valor))
                 else:
                     # Si no hay vencimiento (aunque se valida antes) se actualiza solo la cantidad
                     cursor.execute("""
                         UPDATE lotes_productos
                         SET cantidad_ingresada = cantidad_ingresada + %s,
                             cantidad_disponible = cantidad_disponible + %s
-                        WHERE prodId = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
-                    """, (cantidad, cantidad, prodId, lote_valor))
+                        WHERE prodID = %s AND numeroLote = %s AND fechaIngreso = CURDATE()
+                    """, (cantidad, cantidad, prodID, lote_valor))
             else:
                 nuevo_vencimiento_str = str(nuevo_vencimiento)
                 cursor.execute("""
                     INSERT INTO lotes_productos
-                        (prodId, numeroLote, fechaIngreso, vencimiento, cantidad_ingresada, cantidad_disponible)
+                        (prodID, numeroLote, fechaIngreso, vencimiento, cantidad_ingresada, cantidad_disponible)
                     VALUES (%s, %s, CURDATE(), %s, %s, %s)
-                """, (prodId, lote_valor, nuevo_vencimiento_str, cantidad, cantidad))
+                """, (prodID, lote_valor, nuevo_vencimiento_str, cantidad, cantidad))
             conexion.commit()
             cursor.close()
             conexion.close()
@@ -292,7 +292,7 @@ class StockManager:
             if conexion:
                 cursor = conexion.cursor(dictionary=True)
                 cursor.execute("USE farmanaccio_db")
-                cursor.execute("SELECT prodId, nombre, precio, stock FROM productos WHERE activo = 1")
+                cursor.execute("SELECT prodID, nombre, precio, stock FROM productos WHERE activo = 1")
                 productos = cursor.fetchall()
                 cursor.close()
                 conexion.close()
@@ -313,7 +313,7 @@ class StockManager:
                 return False
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            sql = "UPDATE productos SET nombre=%s, precio=%s WHERE prodId=%s"
+            sql = "UPDATE productos SET nombre=%s, precio=%s WHERE prodID=%s"
             datos = (
                 producto_actualizado["nombre"],
                 producto_actualizado["precio"],
@@ -334,9 +334,9 @@ class StockManager:
             if conexion:
                 cursor = conexion.cursor()
                 cursor.execute("USE farmanaccio_db")
-                sql_producto = "UPDATE productos SET activo = 0, stock = 0 WHERE prodId = %s"
+                sql_producto = "UPDATE productos SET activo = 0, stock = 0 WHERE prodID = %s"
                 cursor.execute(sql_producto, (id_producto,))
-                sql_lotes = "UPDATE lotes_productos SET cantidad_disponible = 0 WHERE prodId = %s"
+                sql_lotes = "UPDATE lotes_productos SET cantidad_disponible = 0 WHERE prodID = %s"
                 cursor.execute(sql_lotes, (id_producto,))
                 conexion.commit()
                 cursor.close()
@@ -357,7 +357,7 @@ class StockManager:
             if conexion:
                 cursor = conexion.cursor(dictionary=True)
                 cursor.execute("USE farmanaccio_db")
-                cursor.execute("SELECT prodId, nombre, precio, stock FROM productos WHERE activo = 0")
+                cursor.execute("SELECT prodID, nombre, precio, stock FROM productos WHERE activo = 0")
                 productos = cursor.fetchall()
                 cursor.close()
                 conexion.close()

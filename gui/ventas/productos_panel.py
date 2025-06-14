@@ -73,7 +73,7 @@ class PanelProductos(ctk.CTkFrame):
         self.tree.delete(*self.tree.get_children())
         for prod in productos:
             item = self.tree.insert("", "end", values=(
-                prod["prodId"], prod["nombre"], prod["precio"], prod["stock"], prod["indicador"]
+                prod["prodID"], prod["nombre"], prod["precio"], prod["stock"], prod["indicador"]
             ))
             if prod["indicador"] == "Crítico":
                 self.tree.item(item, tags=("critical",))
@@ -89,7 +89,7 @@ class PanelProductos(ctk.CTkFrame):
             return None
         valores = self.tree.item(item, "values")
         return {
-            "prodId": valores[0],
+            "prodID": valores[0],
             "nombre": valores[1],
             "precio": float(valores[2]),
             "stock": int(valores[3]),

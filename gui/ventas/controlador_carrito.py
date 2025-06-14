@@ -21,7 +21,7 @@ class ControladorCarrito:
                 f"Excede stock disponible ({producto['stock']})."
             )
             return False
-        existente = next((i for i in self.carrito if i["prodId"] == producto["prodId"]), None)
+        existente = next((i for i in self.carrito if i["prodID"] == producto["prodID"]), None)
         if existente:
             if existente["cantidad"] + cantidad > producto["stock"]:
                 messagebox.showerror(
@@ -32,7 +32,7 @@ class ControladorCarrito:
             existente["cantidad"] += cantidad
         else:
             self.carrito.append({
-                "prodId": producto["prodId"],
+                "prodID": producto["prodID"],
                 "nombre": producto["nombre"],
                 "precio": producto["precio"],
                 "cantidad": cantidad
@@ -41,10 +41,10 @@ class ControladorCarrito:
 
     def actualizar_producto(self, prod_id, nueva_cantidad):
         for item in self.carrito:
-            if item["prodId"] == prod_id:
+            if item["prodID"] == prod_id:
                 producto_actual = next(
                     (p for p in self.stock_manager.obtener_productos()
-                     if p["prodId"] == prod_id),
+                     if p["prodID"] == prod_id),
                     None
                 )
                 if producto_actual and nueva_cantidad > producto_actual["stock"]:
@@ -61,7 +61,7 @@ class ControladorCarrito:
         return False
 
     def eliminar_producto(self, prod_id):
-        self.carrito = [i for i in self.carrito if i["prodId"] != prod_id]
+        self.carrito = [i for i in self.carrito if i["prodID"] != prod_id]
 
     def calcular_total(self):
         bruto = sum(i["precio"] * i["cantidad"] for i in self.carrito)

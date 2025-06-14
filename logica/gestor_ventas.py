@@ -76,12 +76,12 @@ class VentaManager:
 
             # 1) Procesar cada ítem: verificar stock y descontar lotes
             for item in carrito:
-                prod_id = item["prodId"]
+                prod_id = item["prodID"]
                 qty = item["cantidad"]
 
                 # Verificar stock global
                 cursor.execute(
-                    "SELECT stock, precio FROM productos WHERE prodId=%s",
+                    "SELECT stock, precio FROM productos WHERE prodID=%s",
                     (prod_id,)
                 )
                 fila = cursor.fetchone()
@@ -94,7 +94,7 @@ class VentaManager:
                 cursor.execute("""
                     SELECT loteID, cantidad_disponible, numeroLote
                     FROM lotes_productos
-                    WHERE prodId=%s AND cantidad_disponible>0
+                    WHERE prodID=%s AND cantidad_disponible>0
                     ORDER BY vencimiento ASC
                 """, (prod_id,))
                 lotes = cursor.fetchall()
@@ -154,9 +154,9 @@ class VentaManager:
                     SET stock = (
                         SELECT IFNULL(SUM(cantidad_disponible),0)
                         FROM lotes_productos
-                        WHERE prodId=%s
+                        WHERE prodID=%s
                     )
-                    WHERE prodId=%s
+                    WHERE prodID=%s
                 """, (prod_id, prod_id))
 
             # 2) Calcular totales con descuento real
@@ -173,16 +173,16 @@ class VentaManager:
 
             # 4) Insertar detalle de factura
             for item in carrito:
-                pid = item["prodId"]
+                pid = item["prodID"]
                 qty = item["cantidad"]
                 cursor.execute(
-                    "SELECT precio FROM productos WHERE prodId=%s",
+                    "SELECT precio FROM productos WHERE prodID=%s",
                     (pid,)
                 )
                 precio_unit = cursor.fetchone()["precio"]
                 cursor.execute("""
                     INSERT INTO factura_detalles
-                      (facturaId, prodId, cantidad, precioUnitario)
+                      (facturaID, prodID, cantidad, precioUnitario)
                     VALUES (%s,%s,%s,%s)
                 """, (factura_id, pid, qty, precio_unit))
 

@@ -50,13 +50,13 @@ class RemitoGenerator:
             cursor = cnx.cursor(dictionary=True)
             cursor.execute("USE farmanaccio_db")
 
-            # Obtener clienteId por cuil-cuit
+            # Obtener clienteID por cuil-cuit
             cursor.execute(
-                "SELECT clienteId FROM clientes WHERE `cuil-cuit` = %s",
+                "SELECT clienteID FROM clientes WHERE `cuil-cuit` = %s",
                 (cliente.get("cuit"),)
             )
             fila = cursor.fetchone()
-            cid = fila["clienteId"] if fila else None
+            cid = fila["clienteID"] if fila else None
 
             # Insertar en Remito
             sql = """
@@ -79,7 +79,7 @@ class RemitoGenerator:
             for it in carrito:
                 cursor.execute(
                     "INSERT INTO RemitoDetalle (remitoID, prodID, cantidad) VALUES (%s, %s, %s)",
-                    (remito_id, it.get("prodId"), it.get("cantidad"))
+                    (remito_id, it.get("prodID"), it.get("cantidad"))
                 )
 
             cnx.commit()

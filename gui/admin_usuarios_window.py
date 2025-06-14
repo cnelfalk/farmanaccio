@@ -99,7 +99,7 @@ class AdminUsuariosWindow(CTkToplevel):
         
         # Listar los usuarios, cada uno en una fila a partir de la fila 1.
         for i, usuario in enumerate(usuarios, start=1):
-            id_ = usuario["userId"]
+            id_ = usuario["userID"]
             nombre = usuario["usuario"]
             password = usuario["password"]
             rol = usuario["role"]
@@ -149,7 +149,7 @@ class AdminUsuariosWindow(CTkToplevel):
         usuarios = self.usuario_manager.obtener_usuarios_por_estado(1)
         original_usuario = None
         for u in usuarios:
-            if u["userId"] == id_:
+            if u["userID"] == id_:
                 original_usuario, original_password, original_rol = u["usuario"], u["password"], u["role"]
                 break
         if original_usuario is None:
@@ -176,7 +176,7 @@ class AdminUsuariosWindow(CTkToplevel):
         usuarios = self.usuario_manager.obtener_usuarios_por_estado(1)
         usuario_a_eliminar = None
         for u in usuarios:
-            if u["userId"] == id_:
+            if u["userID"] == id_:
                 usuario_a_eliminar = u["usuario"]
                 break
         if usuario_a_eliminar is None:
