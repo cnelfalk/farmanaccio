@@ -221,6 +221,15 @@ class DetalleLotesWindow(ctk.CTkToplevel):
         self.detalle_lotes = detalle_lotes
 
         self.grab_set()
+
+        # Dimensiones de la ventana principal
+        window_width = 700
+        window_height = 500
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
         
         frame_general = ctk.CTkFrame(self)
         frame_general.pack(fill="x", padx=10, pady=10)
