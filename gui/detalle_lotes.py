@@ -14,9 +14,17 @@ class DetalleLoteDetalleWindow(ctk.CTkToplevel):
     def __init__(self, master, lote_records, numero_lote, producto):
         super().__init__(master)
         self.title(f"Detalles para el Lote: {numero_lote}")
-        self.geometry("600x600")
         self.lote_records = lote_records
         self.selected_record_id = None
+
+        # Dimensiones de la ventana principal
+        window_width = 600
+        window_height = 600
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
         # Almacenar la información del producto para actualizar luego el campo stock
         self.producto = producto  # Debe contener, por ejemplo, self.producto["prodId"]

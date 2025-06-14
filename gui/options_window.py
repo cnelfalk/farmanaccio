@@ -10,8 +10,16 @@ class OptionsWindow(ctk.CTkToplevel):
         self.title("Opciones")
         self.resizable(False, False)
         self.grab_set()  # Modal
-        self.geometry("450x300")
         self.iconbitmap(icono_logotipo)
+
+        # Dimensiones de la ventana principal
+        window_width = 450
+        window_height = 300
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
         # Frame principal con márgenes
         main_frame = ctk.CTkFrame(self)

@@ -20,7 +20,15 @@ class PrecioOptionDialog(ctk.CTkToplevel):
         self.result = None
         self.grab_set()
         self.resizable(False, False)
-        self.geometry("400x200")
+
+        # Dimensiones de la ventana principal
+        window_width = 500
+        window_height = 170
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
         mensaje = (
             f"El producto '{nombre_producto}' ya existe con precio {precio_actual}.\n"
@@ -60,8 +68,16 @@ class TripleOptionDialog(ctk.CTkToplevel):
         self.title("Conflicto de Vencimiento")
         self.result = None
         self.grab_set()
-        self.geometry("400x200")
         self.resizable(False, False)
+
+        # Dimensiones de la ventana principal
+        window_width = 500
+        window_height = 170
+        screen_width = self.winfo_screenwidth()
+        screen_height = self.winfo_screenheight()
+        x = int((screen_width - window_width) / 2)
+        y = int((screen_height - window_height) / 2)
+        self.geometry(f"{window_width}x{window_height}+{x}+{y}")
 
         ctk.CTkLabel(self, text=mensaje, wraplength=380, justify="center").pack(padx=10, pady=20)
 
