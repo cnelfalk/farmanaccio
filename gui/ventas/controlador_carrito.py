@@ -1,31 +1,33 @@
 # gui/ventas/controlador_carrito.py
 
-from tkinter import messagebox
+import tkinter.messagebox as messagebox
 
 class ControladorCarrito:
     def __init__(self, stock_manager):
         self.carrito = []
         self.stock_manager = stock_manager
-        self.total_con_descuento = 0.0
         self.descuento = 0.0
 
     def agregar_producto(self, producto, cantidad):
         if not producto:
-            messagebox.showerror("Error", "No se ha seleccionado ningún producto.")
+            messagebox.showerror("Error", "No hay producto seleccionado.")
             return False
-
         if cantidad < 1:
             messagebox.showerror("Error", "La cantidad debe ser al menos 1.")
             return False
-
         if cantidad > producto["stock"]:
-            messagebox.showerror("Error", f"Cantidad excede el stock disponible ({producto['stock']}).")
+            messagebox.showerror(
+                "Error",
+                f"Excede stock disponible ({producto['stock']})."
+            )
             return False
-
-        existente = next((item for item in self.carrito if item["prodId"] == producto["prodId"]), None)
+        existente = next((i for i in self.carrito if i["prodId"] == producto["prodId"]), None)
         if existente:
             if existente["cantidad"] + cantidad > producto["stock"]:
-                messagebox.showerror("Error", f"No se puede agregar esa cantidad, excede el stock ({producto['stock']}).")
+                messagebox.showerror(
+                    "Error",
+                    f"No puede sumar esa cantidad (stock {producto['stock']})."
+                )
                 return False
             existente["cantidad"] += cantidad
         else:
@@ -39,10 +41,17 @@ class ControladorCarrito:
 
     def actualizar_producto(self, prod_id, nueva_cantidad):
         for item in self.carrito:
-            if str(item["prodId"]) == str(prod_id):
-                producto_actual = next((p for p in self.stock_manager.obtener_productos() if str(p["prodId"]) == str(prod_id)), None)
+            if item["prodId"] == prod_id:
+                producto_actual = next(
+                    (p for p in self.stock_manager.obtener_productos()
+                     if p["prodId"] == prod_id),
+                    None
+                )
                 if producto_actual and nueva_cantidad > producto_actual["stock"]:
-                    messagebox.showerror("Error", f"La cantidad no puede superar el stock disponible ({producto_actual['stock']}).")
+                    messagebox.showerror(
+                        "Error",
+                        f"No puede superar stock ({producto_actual['stock']})."
+                    )
                     return False
                 if nueva_cantidad < 1:
                     self.eliminar_producto(prod_id)
@@ -52,26 +61,39 @@ class ControladorCarrito:
         return False
 
     def eliminar_producto(self, prod_id):
-        self.carrito = [item for item in self.carrito if str(item["prodId"]) != str(prod_id)]
+        self.carrito = [i for i in self.carrito if i["prodId"] != prod_id]
 
     def calcular_total(self):
-        total = sum(item["precio"] * item["cantidad"] for item in self.carrito)
-        self.total_con_descuento = total * (1 - self.descuento / 100)
-        return round(self.total_con_descuento, 2)
+        bruto = sum(i["precio"] * i["cantidad"] for i in self.carrito)
+        neto = bruto * (1 - self.descuento / 100)
+        return round(neto, 2)
 
     def aplicar_descuento(self, valor):
+        """
+        Acepta valor con coma o punto, guarda self.descuento como float (con decimales),
+        y devuelve el total ya descontado.
+        """
         try:
-            valor = float(valor)
-            if valor < 0:
-                valor = 0
-            elif valor > 100:
-                valor = 100
+            texto = str(valor).replace(",", ".")
+            v = float(texto)
         except ValueError:
-            valor = 0
-        self.descuento = valor
+            messagebox.showerror("Error", "Descuento inválido. Usa números (coma o punto).")
+            v = 0.0
+        # Limitar entre 0 y 100
+        if v < 0:
+            v = 0.0
+        elif v > 100:
+            v = 100.0
+        self.descuento = v
         return self.calcular_total()
+
+    def obtener_descuento_str(self):
+        """
+        Retorna el descuento en porcentaje formateado con dos decimales, 
+        e.g. "35.50".
+        """
+        return f"{self.descuento:.2f}"
 
     def limpiar(self):
         self.carrito.clear()
-        self.total_con_descuento = 0.0
         self.descuento = 0.0
