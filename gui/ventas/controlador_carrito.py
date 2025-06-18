@@ -9,6 +9,9 @@ class ControladorCarrito:
         self.descuento = 0.0
 
     def agregar_producto(self, producto, cantidad):
+        """
+        Añade {prodID, nombre, precio, cantidad, stock} al carrito.
+        """
         if not producto:
             messagebox.showerror("Error", "No hay producto seleccionado.")
             return False
@@ -21,36 +24,39 @@ class ControladorCarrito:
                 f"Excede stock disponible ({producto['stock']})."
             )
             return False
+
+        # Buscamos si ya existe
         existente = next((i for i in self.carrito if i["prodID"] == producto["prodID"]), None)
         if existente:
-            if existente["cantidad"] + cantidad > producto["stock"]:
+            # sumamos cantidades
+            nueva = existente["cantidad"] + cantidad
+            if nueva > producto["stock"]:
                 messagebox.showerror(
                     "Error",
                     f"No puede sumar esa cantidad (stock {producto['stock']})."
                 )
                 return False
-            existente["cantidad"] += cantidad
+            existente["cantidad"] = nueva
         else:
+            # AGREGAMOS campo 'stock' aquí
             self.carrito.append({
                 "prodID": producto["prodID"],
                 "nombre": producto["nombre"],
                 "precio": producto["precio"],
-                "cantidad": cantidad
+                "cantidad": cantidad,
+                "stock": producto["stock"]    # <--- stock almacenado
             })
         return True
 
     def actualizar_producto(self, prod_id, nueva_cantidad):
         for item in self.carrito:
             if item["prodID"] == prod_id:
-                producto_actual = next(
-                    (p for p in self.stock_manager.obtener_productos()
-                     if p["prodID"] == prod_id),
-                    None
-                )
-                if producto_actual and nueva_cantidad > producto_actual["stock"]:
+                # Actualizamos en base al 'stock' guardado
+                stock = item.get("stock", 0)
+                if nueva_cantidad > stock:
                     messagebox.showerror(
                         "Error",
-                        f"No puede superar stock ({producto_actual['stock']})."
+                        f"No puede superar stock ({stock})."
                     )
                     return False
                 if nueva_cantidad < 1:
