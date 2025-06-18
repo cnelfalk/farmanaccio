@@ -62,7 +62,7 @@ class VentaManager:
     Gestor de ventas. Confirma la venta dentro de una transacción,
     aplica descuentos y genera la factura con datos de cliente.
     """
-    def confirmar_venta(self, carrito, descuento=0.0, cliente=None, parent=None):
+    def confirmar_venta(self, carrito, descuento=0.0, cliente=None, tipo_factura=None, parent=None):
         try:
             conexion = ConexionBD.obtener_conexion()
             if not conexion:
@@ -166,9 +166,9 @@ class VentaManager:
             # 3) Insertar factura con descuento
             cursor.execute("""
                 INSERT INTO facturas
-                  (fechaEmision, horaEmision, total_neto, total_bruto, descuento)
-                VALUES(CURRENT_DATE, CURRENT_TIME, %s, %s, %s)
-            """, (total_neto, total_bruto, dcto))
+                  (fechaEmision, horaEmision, total_neto, total_bruto, descuento, tipoFactura)
+                VALUES(CURRENT_DATE, CURRENT_TIME, %s, %s, %s, %s)
+            """, (total_neto, total_bruto, dcto, tipo_factura or "B"))
             factura_id = cursor.lastrowid
 
             # 4) Insertar detalle de factura

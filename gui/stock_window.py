@@ -1,7 +1,7 @@
 # src/gui/stock_window.py
 import customtkinter as ctk
 from gui.login import icono_logotipo
-from tkinter import ttk, messagebox, font as tkFont
+from tkinter import ttk, messagebox, font as tkFont, simpledialog
 from tkcalendar import DateEntry  
 from utils.utilidades import Utilidades
 from logica.gestor_vademecum import VademecumManager
@@ -462,17 +462,25 @@ class StockWindow(ctk.CTkToplevel):
             messagebox.showerror("Error", "No se pudo modificar el producto.")
     
     def eliminar(self):
-        selected = self.tree.focus()
-        if not selected:
-            messagebox.showerror("Error", "Por favor, seleccione un producto para eliminar.")
+        sel = self.tree.focus()
+        if not sel:
+            return messagebox.showerror("Error","Seleccione un producto.",parent=self)
+        prod_id = self.tree.item(sel, "values")[0]
+
+        # Reutilizamos simpledialog de clientes
+        razon = simpledialog.askstring(
+            "Razón de archivado",
+            "Indique el motivo para archivar este producto:",
+            parent=self
+        )
+        if razon is None:
             return
-        product_id = self.tree.item(selected, "values")[0]
-        if messagebox.askyesno("Confirmar Eliminación", "¿Está seguro de eliminar este producto?"):
-            if self.stock_manager.eliminar_producto(product_id):
-                messagebox.showinfo("Éxito", "Producto eliminado correctamente.")
-                self.cargar_productos()
-            else:
-                messagebox.showerror("Error", "No se pudo eliminar el producto.")
+
+        if self.stock_manager.eliminar_producto(prod_id, razon.strip()):
+            messagebox.showinfo("Éxito","Producto archivado.", parent=self)
+            self.cambiar_origen(self.combo_busqueda.get())
+        else:
+            messagebox.showerror("Error","No se pudo archivar el producto.", parent=self)
     
     def restaurar_producto(self):
         selected_item = self.tree.focus()

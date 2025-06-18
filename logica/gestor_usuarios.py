@@ -85,19 +85,27 @@ class UsuarioManager:
             print("Error al obtener usuarios por estado:", e)
             return []
 
-    def eliminar_usuario(self, id_usuario) -> bool:
+    def eliminar_usuario(self, id_usuario: int, razon_archivado: str) -> bool:
+        """
+        Marca activo=0 y guarda razonArchivado.
+        """
         try:
-            conexion = ConexionBD.obtener_conexion()
-            cursor = conexion.cursor()
-            cursor.execute("USE farmanaccio_db")
-            cursor.execute("UPDATE usuarios SET activo = 0 WHERE userID = %s", (id_usuario,))
-            conexion.commit()
-            affected = cursor.rowcount
-            cursor.close()
-            conexion.close()
-            return affected > 0
+            cnx = ConexionBD.obtener_conexion()
+            cur = cnx.cursor()
+            cur.execute("USE farmanaccio_db")
+            cur.execute("""
+                UPDATE usuarios
+                   SET activo = 0,
+                       razonArchivado = %s
+                 WHERE userID = %s
+            """, (razon_archivado, id_usuario))
+            cnx.commit()
+            ok = cur.rowcount > 0
+            cur.close()
+            cnx.close()
+            return ok
         except Error as e:
-            print("Error al eliminar usuario:", e)
+            print("Error al archivar usuario:", e)
             return False
 
     def restaurar_usuario(self, id_usuario, nuevo_rol) -> bool:

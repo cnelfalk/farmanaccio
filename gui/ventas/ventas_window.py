@@ -18,32 +18,26 @@ class VentasWindow(ctk.CTkToplevel):
         self.resizable(False, False)
         self.iconbitmap(icono_logotipo)
 
-        # Instancias de lógica
-        self.stock_manager    = StockManager()
-        self.venta_manager    = VentaManager()
+        # Lógica
+        self.stock_manager       = StockManager()
+        self.venta_manager       = VentaManager()
         self.controlador_carrito = ControladorCarrito(self.stock_manager)
 
-        # Variables auxiliares
-        self.quantity_var     = ctk.StringVar(value="1")
-        self.cart_quantity_var= ctk.StringVar(value="")
-        self.selected_product = None
-
-        # Cliente y remito
-        self.generar_remito   = ctk.BooleanVar(value=False)
-        # Diccionario que vamos a poblar desde la ventana de clientes
-        self.cliente_remito   = {
-            "nombre": "", "apellido": "", "cuit": "",
-            "iva": "", "direccion": ""
-        }
+        # Variables
+        self.quantity_var           = ctk.StringVar(value="1")
+        self.cart_quantity_var      = ctk.StringVar(value="")
+        self.selected_product       = None
+        self.generar_remito         = ctk.BooleanVar(value=False)
+        self.cliente_remito         = {"nombre":"", "apellido":"", "cuit":"", "iva":"", "direccion":""}
         self.fechaVencimientoRemito = None
 
-        # ─── Layout ─────────────────────────────────────────────────────────
+        # Layout principal
         self.frame_principal = ctk.CTkFrame(self)
         self.frame_principal.pack(fill="both", expand=True, padx=10, pady=10)
         self.frame_principal.grid_columnconfigure(0, weight=1)
         self.frame_principal.grid_columnconfigure(1, weight=1)
 
-        # Panel de productos
+        # Panel Productos
         self.panel_productos = PanelProductos(
             master=self.frame_principal,
             on_buscar=self.buscar_productos,
@@ -54,7 +48,7 @@ class VentasWindow(ctk.CTkToplevel):
         )
         self.panel_productos.grid(row=0, column=0, sticky="nsew")
 
-        # Panel de carrito
+        # Panel Carrito
         self.panel_carrito = PanelCarrito(
             master=self.frame_principal,
             cart_quantity_var=self.cart_quantity_var,
@@ -66,64 +60,63 @@ class VentasWindow(ctk.CTkToplevel):
         )
         self.panel_carrito.grid(row=0, column=1, sticky="nsew")
 
-        # Frame de remito/cliente
+        # Frame Cliente/Remito
         self.frame_remito = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_remito.pack(pady=5, anchor="center")
 
-        # Checkbox de remito
         self.chk_remito = ctk.CTkCheckBox(
-            self.frame_remito,
-            text="Generar Remito",
-            variable=self.generar_remito,
-            state="disabled"
+            self.frame_remito, text="Generar Remito",
+            variable=self.generar_remito, state="disabled"
         )
-        self.chk_remito.grid(row=0, column=0, padx=5, pady=5)
+        self.chk_remito.grid(row=0, column=0, padx=5)
 
-        # Botón para seleccionar cliente
         self.btn_seleccionar_cliente = ctk.CTkButton(
-            self.frame_remito,
-            text="Seleccionar Cliente",
+            self.frame_remito, text="Seleccionar Cliente",
             command=self.seleccionar_cliente
         )
-        self.btn_seleccionar_cliente.grid(row=0, column=1, padx=5, pady=5)
+        self.btn_seleccionar_cliente.grid(row=0, column=1, padx=5)
 
-        # Botón para asignar vencimiento de remito
         self.btn_asignar_venc = ctk.CTkButton(
-            self.frame_remito,
-            text="Asignar Vencimiento del Remito",
-            command=self.asignar_vencimiento_remito,
-            state="disabled"
+            self.frame_remito, text="Asignar Vencimiento del Remito",
+            command=self.asignar_vencimiento_remito, state="disabled"
         )
-        self.btn_asignar_venc.grid(row=0, column=2, padx=5, pady=5)
+        self.btn_asignar_venc.grid(row=0, column=2, padx=5)
 
         self.lbl_vencimiento_remito = ctk.CTkLabel(
-            self.frame_remito,
-            text="Vencimiento: N/D"
+            self.frame_remito, text="Vencimiento: N/D"
         )
-        self.lbl_vencimiento_remito.grid(row=0, column=3, padx=5, pady=5)
+        self.lbl_vencimiento_remito.grid(row=0, column=3, padx=5)
 
         self.lbl_cliente = ctk.CTkLabel(
-            self.frame_remito,
-            text="Cliente: Sin seleccionar"
+            self.frame_remito, text="Cliente: Sin seleccionar"
         )
-        self.lbl_cliente.grid(row=0, column=4, padx=5, pady=5)
+        self.lbl_cliente.grid(row=0, column=4, padx=5)
 
-        # Bind para refrescar stock tras modificaciones de lote
+        # Refrescar stock tras lote
         self.bind("<<DatosActualizados>>", lambda e: self.cargar_productos())
         self.cargar_productos()
 
-        # Botón Volver
-        ctk.CTkButton(self, text="Volver", command=self.destroy).pack(pady=10)
+        # Tipo de factura
+        self.tipo_factura_var = ctk.StringVar(value="B")
+        frame_tipo = ctk.CTkFrame(self)
+        frame_tipo.pack(pady=5)
+        ctk.CTkLabel(frame_tipo, text="Tipo de Factura:").pack(side="left", padx=5)
+        self.combo_tipo_factura = ctk.CTkComboBox(
+            frame_tipo, values=["A","B","C"],
+            variable=self.tipo_factura_var, width=80
+        )
+        self.combo_tipo_factura.pack(side="left", padx=5)
 
+        ctk.CTkButton(self, text="Volver", command=self.destroy).pack(pady=10)
 
     def cargar_productos(self):
         productos = self.stock_manager.obtener_productos()
         self.panel_productos.cargar_productos(productos)
 
     def buscar_productos(self):
-        termino = self.panel_productos.obtener_termino_busqueda().lower()
-        productos = self.stock_manager.obtener_productos()
-        filtrados = [p for p in productos if termino in p["nombre"].lower()]
+        term = self.panel_productos.obtener_termino_busqueda().lower()
+        todos = self.stock_manager.obtener_productos()
+        filtrados = [p for p in todos if term in p["nombre"].lower()]
         self.panel_productos.cargar_productos(filtrados)
 
     def seleccionar_producto(self, event=None):
@@ -133,12 +126,12 @@ class VentasWindow(ctk.CTkToplevel):
             self.panel_productos.habilitar_controles()
 
     def agregar_al_carrito(self):
-        raw = self.quantity_var.get().replace(",", ".")
+        raw = self.quantity_var.get().replace(",",".")
         if not raw.isdigit():
-            messagebox.showerror("Error", "Cantidad inválida.", parent=self)
+            messagebox.showerror("Error","Cantidad inválida", parent=self)
             return
-        cantidad = int(raw)
-        if self.controlador_carrito.agregar_producto(self.selected_product, cantidad):
+        qty = int(raw)
+        if self.controlador_carrito.agregar_producto(self.selected_product, qty):
             self.actualizar_tree_carrito()
             self.panel_productos.deshabilitar_controles()
 
@@ -147,10 +140,7 @@ class VentasWindow(ctk.CTkToplevel):
             self.panel_carrito.obtener_descuento()
         )
         self.panel_carrito.actualizar_carrito(self.controlador_carrito.carrito)
-        self.panel_carrito.actualizar_total(
-            total,
-            self.controlador_carrito.descuento
-        )
+        self.panel_carrito.actualizar_total(total, self.controlador_carrito.descuento)
         self.panel_carrito.deshabilitar_controles()
 
     def on_cart_item_selected(self, event=None):
@@ -166,7 +156,6 @@ class VentasWindow(ctk.CTkToplevel):
             self.actualizar_tree_carrito()
 
     def confirmar(self):
-        # Validar datos de cliente antes de facturar
         faltan = []
         c = self.cliente_remito
         if not c["nombre"].strip():   faltan.append("Nombre")
@@ -174,44 +163,37 @@ class VentasWindow(ctk.CTkToplevel):
         if not c["cuit"].strip():     faltan.append("CUIT-CUIL")
         if not c["iva"].strip():      faltan.append("IVA")
         if faltan:
-            messagebox.showerror(
-                "Cliente incompleto",
-                "Completa: " + ", ".join(faltan),
-                parent=self
-            )
+            messagebox.showerror("Cliente incompleto","Completa: "+", ".join(faltan),parent=self)
             return
 
-        # Validar remito
         if self.generar_remito.get():
             faltan2 = []
-            if not c["direccion"].strip():        faltan2.append("Dirección")
-            if not self.fechaVencimientoRemito:   faltan2.append("Vencimiento")
+            if not c["direccion"].strip():      faltan2.append("Dirección")
+            if not self.fechaVencimientoRemito: faltan2.append("Vencimiento")
             if faltan2:
-                msg = "Faltan: " + ", ".join(faltan2) + \
-                      "\n¿Generar factura sin remito (Sí) o cancelar (No)?"
-                if messagebox.askyesno("Confirmar", msg, parent=self):
+                msg = "Faltan: "+", ".join(faltan2)+\
+                      "\n¿Facturar sin remito (Sí) o cancelar (No)?"
+                if messagebox.askyesno("Confirmar",msg,parent=self):
                     self.generar_remito.set(False)
                 else:
                     return
 
         if not self.controlador_carrito.carrito:
-            messagebox.showerror("Error", "El carrito está vacío.", parent=self)
+            messagebox.showerror("Error","El carrito está vacío.",parent=self)
             return
-        if not Utilidades.confirmar_accion(self, "efectuar esta venta"):
+        if not Utilidades.confirmar_accion(self,"efectuar esta venta"):
             return
 
-        # ─── Aquí pasamos CLIENTE y PARENT correctamente ────────────────
-        exito, mensaje = self.venta_manager.confirmar_venta(
+        tipo = self.tipo_factura_var.get()
+        ok, msg = self.venta_manager.confirmar_venta(
             self.controlador_carrito.carrito,
             self.controlador_carrito.descuento,
-            cliente=self.cliente_remito,   # <--- pasó el dict de cliente
-            parent=self                   # <--- pasó self como parent
+            cliente=self.cliente_remito,
+            tipo_factura=tipo,
+            parent=self
         )
-
-        if exito:
-            messagebox.showinfo("Éxito", mensaje, parent=self)
-
-            # Generar remito si corresponde
+        if ok:
+            messagebox.showinfo("Éxito",msg,parent=self)
             if self.generar_remito.get():
                 rg = RemitoGenerator()
                 rg.generar_remito(
@@ -220,13 +202,11 @@ class VentasWindow(ctk.CTkToplevel):
                     carrito=self.controlador_carrito.carrito.copy(),
                     fecha_vencimiento=self.fechaVencimientoRemito
                 )
-
-            # Reinicio del carrito y refresco
             self.controlador_carrito.limpiar()
             self.actualizar_tree_carrito()
             self.cargar_productos()
         else:
-            messagebox.showerror("Error", mensaje, parent=self)
+            messagebox.showerror("Error",msg,parent=self)
 
     def seleccionar_cliente(self):
         from gui.clientes_window import ClientesWindow
@@ -234,31 +214,25 @@ class VentasWindow(ctk.CTkToplevel):
         ventana.grab_set()
         ventana.wait_window()
 
-        cliente = ventana.selected_cliente
-        if cliente and cliente.get("nombre") and cliente.get("apellido") and cliente.get("cuil") and cliente.get("iva"):
-            # Poblo mi dict con todos los campos, incluyendo dirección
+        cl = ventana.selected_cliente
+        if cl and cl.get("nombre") and cl.get("apellido") and cl.get("cuil") and cl.get("iva"):
             self.cliente_remito = {
-                "nombre": cliente["nombre"],
-                "apellido": cliente["apellido"],
-                "cuit": cliente["cuil"],
-                "iva": cliente["iva"],
-                "direccion": cliente.get("direccion","")
+                "nombre": cl["nombre"],
+                "apellido": cl["apellido"],
+                "cuit": cl["cuil"],
+                "iva": cl["iva"],
+                "direccion": cl.get("direccion","")
             }
             self.chk_remito.configure(state="normal")
             self.btn_asignar_venc.configure(state="normal")
         else:
-            messagebox.showwarning(
-                "Cliente inválido",
-                "Debe tener Nombre, Apellido, CUIT-CUIL e IVA.",
-                parent=self
-            )
-            self.cliente_remito = {"nombre":"", "apellido":"", "cuit":"", "iva":"", "direccion":""}
+            messagebox.showwarning("Cliente inválido","Debe tener Nombre, Apellido, CUIT-CUIL e IVA.",parent=self)
+            self.cliente_remito = {"nombre":"","apellido":"","cuit":"","iva":"","direccion":""}
             self.chk_remito.configure(state="disabled")
             self.btn_asignar_venc.configure(state="disabled")
 
-        texto = (f"{self.cliente_remito['nombre']} "
-                 f"{self.cliente_remito['apellido']}").strip() or "Sin seleccionar"
-        self.lbl_cliente.configure(text=f"Cliente: {texto}")
+        txt = (f"{self.cliente_remito['nombre']} {self.cliente_remito['apellido']}").strip() or "Sin seleccionar"
+        self.lbl_cliente.configure(text=f"Cliente: {txt}")
 
     def asignar_vencimiento_remito(self):
         top = Toplevel(self)
@@ -268,7 +242,18 @@ class VentasWindow(ctk.CTkToplevel):
         top.grab_set()
 
         from tkcalendar import DateEntry
-        date_entry = DateEntry(top, width=12, date_pattern="yyyy-mm-dd")
+        import datetime
+
+        hoy     = datetime.date.today()
+        min_date= hoy + datetime.timedelta(days=1)
+
+        date_entry = DateEntry(
+            top,
+            width=12,
+            date_pattern="yyyy-mm-dd",
+            mindate=min_date,
+            locale="es_ES"
+        )
         date_entry.pack(pady=20)
 
         def aceptar():

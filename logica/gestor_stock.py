@@ -328,23 +328,35 @@ class StockManager:
             messagebox.showerror("Error al modificar producto:", e, parent=parent)
             return False
 
-    def eliminar_producto(self, id_producto) -> bool:
+    def eliminar_producto(self, id_producto: int, razon_archivado: str) -> bool:
+        """
+        Archiva un producto (activo=0, stock=0) y guarda razonArchivado.
+        """
         try:
-            conexion = ConexionBD.obtener_conexion()
-            if conexion:
-                cursor = conexion.cursor()
-                cursor.execute("USE farmanaccio_db")
-                sql_producto = "UPDATE productos SET activo = 0, stock = 0 WHERE prodID = %s"
-                cursor.execute(sql_producto, (id_producto,))
-                sql_lotes = "UPDATE lotes_productos SET cantidad_disponible = 0 WHERE prodID = %s"
-                cursor.execute(sql_lotes, (id_producto,))
-                conexion.commit()
-                cursor.close()
-                conexion.close()
-                return True
+            cnx = ConexionBD.obtener_conexion()
+            cur = cnx.cursor()
+            cur.execute("USE farmanaccio_db")
+            cur.execute("""
+                UPDATE productos
+                   SET activo = 0,
+                       stock = 0,
+                       razonArchivado = %s
+                 WHERE prodID = %s
+            """, (razon_archivado, id_producto))
+            # También dejar a 0 los lotes
+            cur.execute("""
+                UPDATE lotes_productos
+                   SET cantidad_disponible = 0
+                 WHERE prodID = %s
+            """, (id_producto,))
+            cnx.commit()
+            ok = cur.rowcount > 0
+            cur.close()
+            cnx.close()
+            return ok
         except Error as e:
-            messagebox.showerror("Error al eliminar producto:", e)
-        return False
+            messagebox.showerror("Error al archivar producto", str(e))
+            return False
     
     def obtener_productos_archivados(self) -> list:
         """

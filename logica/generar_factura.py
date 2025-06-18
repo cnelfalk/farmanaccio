@@ -1,3 +1,5 @@
+# src/logica/generar_factura.py
+
 import os
 from docxtpl import DocxTemplate
 from docx2pdf import convert
@@ -12,16 +14,16 @@ class FacturaGenerator:
         self.plantilla = os.path.join(base, "plantilla_factura.docx")
 
     def obtener_factura_y_detalles(self, cursor, factura_id):
-        # Recupera datos principales
+        # Recupera datos principales, incluyendo tipoFactura
         cursor.execute("""
-            SELECT facturaID, fechaEmision, horaEmision, total_neto, total_bruto, descuento
+            SELECT facturaID, fechaEmision, horaEmision,
+                   total_neto, total_bruto, descuento, tipoFactura
             FROM facturas
             WHERE facturaID = %s
         """, (factura_id,))
         factura = cursor.fetchone()
         detalles = []
         if factura:
-            # Recupera líneas de detalle
             cursor.execute("""
                 SELECT fd.prodID, p.nombre, fd.cantidad, fd.precioUnitario
                 FROM factura_detalles fd
@@ -41,31 +43,32 @@ class FacturaGenerator:
                 for cell in row.cells:
                     for para in cell.paragraphs:
                         if "%%tabla_placeholder%%" in para.text:
-                            # Quita párrafo marcador
                             cell._tc.remove(para._element)
-                            # Inserta tabla anidada
                             tbl = cell.add_table(rows=1, cols=4)
                             hdr = tbl.rows[0].cells
                             hdr[0].text, hdr[1].text = "Cantidad", "Producto"
                             hdr[2].text, hdr[3].text = "Precio Unit.", "Sub-total"
+                            # Estilo de encabezados
                             for c in hdr:
                                 for r in c.paragraphs[0].runs:
                                     r.font.name = "Helvetica"
                                     r.font.size = Pt(10)
                                     r.font.bold = True
+                            # Filas de datos
                             for item in detalles:
                                 rc = tbl.add_row().cells
                                 rc[0].text = str(item["cantidad"])
                                 rc[1].text = item["nombre"]
-                                rc[2].text = f"{item['precioUnitario']:.2f}"
-                                rc[3].text = f"{item['subtotal']:.2f}"
+                                # Anteponer símbolo de peso $
+                                rc[2].text = f"${item['precioUnitario']:.2f}"
+                                rc[3].text = f"${item['subtotal']:.2f}"
                             return
 
     def generar_factura_con_transaccion(self, parent, conexion, factura_id, cliente: dict = None):
         """
         Genera la factura usando la conexión activa. Recibe opcionalmente un dict cliente:
           { 'nombre','apellido','cuit','iva' }
-        Inserta descuento real y rellena cliente en la plantilla.
+        Inserta el tipo de factura, el descuento real y rellena datos de cliente en la plantilla.
         """
         try:
             cursor = conexion.cursor(dictionary=True)
@@ -76,10 +79,7 @@ class FacturaGenerator:
 
             # Formateo del descuento
             dcto = float(datos["descuento"])
-            if dcto == 0:
-                descuento_str = "0%"
-            else:
-                descuento_str = f"{dcto:.2f}%"
+            descuento_str = "0%" if dcto == 0 else f"{dcto:.2f}%"
 
             # Círculos de IVA
             iva_val = (cliente or {}).get("iva", "").lower()
@@ -92,16 +92,17 @@ class FacturaGenerator:
                 "ivaConsFinal":   circ(iva_val == "cons. final"),
             }
 
-            # Construcción de contexto
+            # Construcción de contexto con tipoFactura e IVA
             ctx = {
-                "facturaID":   datos["facturaID"],
-                "fecha":       datos["fechaEmision"],
-                "hora":        datos["horaEmision"],
-                "total_bruto": datos["total_bruto"],
-                "descuento":   descuento_str,
-                "total_neto":  datos["total_neto"],
-                **iva_ctx,
-                "tabla_placeholder": "%%tabla_placeholder%%"
+                "facturaID":     datos["facturaID"],
+                "fecha":         datos["fechaEmision"],
+                "hora":          datos["horaEmision"],
+                "total_bruto":   datos["total_bruto"],
+                "descuento":     descuento_str,
+                "total_neto":    datos["total_neto"],
+                "tipoFactura":   datos["tipoFactura"],
+                "tabla_placeholder": "%%tabla_placeholder%%",
+                **iva_ctx
             }
 
             # Datos de cliente
@@ -113,7 +114,7 @@ class FacturaGenerator:
                 ctx["clienteNombre"]    = ""
                 ctx["clienteCUIT_CUIL"] = ""
 
-            # Renderizado
+            # Renderizado de la plantilla
             doc = DocxTemplate(self.plantilla)
             doc.render(ctx)
             self.insert_table_in_doc(doc, detalles)
@@ -128,11 +129,12 @@ class FacturaGenerator:
                 messagebox.showwarning("Cancelado", "Guardado cancelado.", parent=parent)
                 return False
 
-            doc.save(ruta)
             # Convertir a PDF
+            doc.save(ruta)
             pdf = os.path.splitext(ruta)[0] + ".pdf"
             convert(ruta, pdf)
             os.remove(ruta)
+
             messagebox.showinfo("Éxito", f"Factura guardada en {pdf}", parent=parent)
             return True
 
@@ -141,8 +143,10 @@ class FacturaGenerator:
             return False
 
         finally:
-            try: cursor.close()
-            except: pass
+            try:
+                cursor.close()
+            except:
+                pass
 
     def generar_factura(self, parent, conexion, factura_id, cliente: dict = None):
-        return self.generar_factura_con_transaccion(parent, conexion, factura_id, cliente=cliente)
+        return self.generar_factura_con_transaccion(parent, conexion, factura_id, cliente)
