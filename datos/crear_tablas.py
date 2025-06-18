@@ -9,11 +9,8 @@ class TablaCreator:
     """
     Crea la base de datos 'farmanaccio_db' y sus tablas:
       - vademecum, productos, lotes_productos, usuarios, clientes,
-        facturas, factura_detalles, Remito y RemitoDetalle.
-    Además inserta datos iniciales:
-      • Tres usuarios de ejemplo (admin + 2 empleados)
-      • Cinco clientes de ejemplo, uno por cada tipo de IVA
-      • Cinco productos precargados (solo si la tabla productos está vacía)
+        facturas, factura_detalles, Remito (con clienteDireccion) y RemitoDetalle.
+    Además inserta datos iniciales.
     """
 
     def crear_base_de_datos_y_tablas(self):
@@ -86,13 +83,15 @@ class TablaCreator:
             """)
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS facturas (
-                  facturaID INT AUTO_INCREMENT PRIMARY KEY,
-                  fechaEmision DATE DEFAULT CURRENT_DATE,
-                  horaEmision TIME,
-                  total_neto DECIMAL(10,2) NOT NULL,
-                  total_bruto DECIMAL(10,2) NOT NULL,
-                  descuento DECIMAL(5,2) DEFAULT 0.00,
-                  tipoFactura ENUM('A','B','C') NOT NULL DEFAULT 'B'
+                  facturaID   INT AUTO_INCREMENT PRIMARY KEY,
+                  clienteID   INT NULL,
+                  fechaEmision DATE    DEFAULT CURRENT_DATE,
+                  horaEmision  TIME,
+                  total_neto   DECIMAL(10,2) NOT NULL,
+                  total_bruto  DECIMAL(10,2) NOT NULL,
+                  descuento    DECIMAL(5,2) DEFAULT 0.00,
+                  tipoFactura  ENUM('A','B','C') NOT NULL DEFAULT 'B',
+                  FOREIGN KEY (clienteID) REFERENCES clientes(clienteID)
                 )
             """)
             cursor.execute("""
@@ -105,12 +104,14 @@ class TablaCreator:
                   FOREIGN KEY (facturaID) REFERENCES facturas(facturaID)
                 )
             """)
+            # Aquí agregamos clienteDireccion
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS Remito (
                   remitoID INT AUTO_INCREMENT PRIMARY KEY,
                   clienteID INT,
                   cuit_cuil VARCHAR(20),
                   ivaEstado VARCHAR(50),
+                  direccionCliente VARCHAR(150),
                   fechaInicio DATE,
                   vencimientoRemito DATE,
                   FOREIGN KEY (clienteID) REFERENCES clientes(clienteID)
@@ -128,8 +129,6 @@ class TablaCreator:
             """)
 
             # 3) Inserción de datos iniciales
-
-            # 3.1 Usuarios
             usuarios_default = [
                 ('admin',      'admin',    'admin'),
                 ('empleado1', 'pass1',    'empleado'),
@@ -141,7 +140,6 @@ class TablaCreator:
                     (u, pw, rl)
                 )
 
-            # 3.2 Clientes: uno distinto para cada tipo de IVA
             clientes_default = [
                 ('Carlos', 'López',    '20-11111111-1', '555-1001', 'carlos.lopez@ej.com', 'Calle Alfa 1',    'Exento'),
                 ('María',  'González', '20-22222222-2', '555-1002', 'maria.gonzalez@ej.com', 'Calle Beta 2',    'Monotributo'),
@@ -157,7 +155,6 @@ class TablaCreator:
                     (n, a, c, t, e, d, iva)
                 )
 
-            # 3.3 Precarga de cinco productos con precios predeterminados
             cursor.execute("SELECT COUNT(*) FROM productos")
             total_prod = cursor.fetchone()[0]
             if total_prod == 0:

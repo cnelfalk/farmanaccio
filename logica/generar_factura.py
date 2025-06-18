@@ -1,5 +1,3 @@
-# src/logica/generar_factura.py
-
 import os
 from docxtpl import DocxTemplate
 from docx2pdf import convert
@@ -67,7 +65,7 @@ class FacturaGenerator:
     def generar_factura_con_transaccion(self, parent, conexion, factura_id, cliente: dict = None):
         """
         Genera la factura usando la conexión activa. Recibe opcionalmente un dict cliente:
-          { 'nombre','apellido','cuit','iva' }
+          { 'nombre','apellido','cuit','iva','clienteID' }
         Inserta el tipo de factura, el descuento real y rellena datos de cliente en la plantilla.
         """
         try:
@@ -105,14 +103,16 @@ class FacturaGenerator:
                 **iva_ctx
             }
 
-            # Datos de cliente
+            # ➡️ MOD: agregar clienteID al contexto
             if cliente:
                 nombre_full = f"{cliente.get('nombre','')} {cliente.get('apellido','')}".strip()
                 ctx["clienteNombre"]    = nombre_full
                 ctx["clienteCUIT_CUIL"] = cliente.get("cuit","")
+                ctx["clienteID"]        = cliente.get("clienteID","")  # MOD
             else:
                 ctx["clienteNombre"]    = ""
                 ctx["clienteCUIT_CUIL"] = ""
+                ctx["clienteID"]        = ""  # MOD
 
             # Renderizado de la plantilla
             doc = DocxTemplate(self.plantilla)

@@ -1,5 +1,3 @@
-# src/logica/generar_remito.py
-
 import os
 from datetime import datetime
 from docxtpl import DocxTemplate
@@ -13,6 +11,7 @@ class RemitoGenerator:
     def __init__(self):
         base = os.path.dirname(os.path.abspath(__file__))
         self.plantilla = os.path.join(base, "plantilla_remito.docx")
+        self.clienteID = None  # MOD
 
     def insert_table_in_doc(self, doc, carrito):
         """
@@ -43,6 +42,7 @@ class RemitoGenerator:
     def insertar_en_bd(self, cliente, carrito, fecha_venc):
         """
         Inserta cabecera y detalle del remito en la base de datos.
+        Ahora guarda también la dirección del cliente.
         Retorna el remitoID (auto-increment) o None si falla.
         """
         try:
@@ -57,25 +57,27 @@ class RemitoGenerator:
             )
             fila = cursor.fetchone()
             cid = fila["clienteID"] if fila else None
+            # ➡️ MOD: guardamos el ID en el atributo
+            self.clienteID = cid
 
-            # Insertar en Remito
             sql = """
                 INSERT INTO Remito
-                  (clienteID, cuit_cuil, ivaEstado, fechaInicio, vencimientoRemito)
-                VALUES (%s, %s, %s, %s, %s)
+                  (clienteID, cuit_cuil, ivaEstado, direccionCliente, fechaInicio, vencimientoRemito)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """
             hoy = datetime.now().date().isoformat()
             venc = fecha_venc.isoformat() if fecha_venc else None
+            direccion = cliente.get("direccion", "")
             cursor.execute(sql, (
                 cid,
                 cliente.get("cuit"),
                 cliente.get("iva"),
+                direccion,
                 hoy,
                 venc
             ))
             remito_id = cursor.lastrowid
 
-            # Insertar líneas en RemitoDetalle
             for it in carrito:
                 cursor.execute(
                     "INSERT INTO RemitoDetalle (remitoID, prodID, cantidad) VALUES (%s, %s, %s)",
@@ -97,16 +99,10 @@ class RemitoGenerator:
 
     def generar_remito_con_transaccion(self, parent, cliente, carrito, fecha_vencimiento=None):
         """
-        Genera el remito, guardándolo en BD y luego en .docx/.pdf.
-        Parámetros:
-          parent: ventana padre para diálogos
-          cliente: dict con campos 'nombre','apellido','cuit','iva','direccion'
-          carrito: lista de ítems con 'nombre' y 'cantidad'
-          fecha_vencimiento: date objeto o None
-        Retorna True si todo sale OK, False en caso contrario.
+        Genera el remito: lo inserta en BD (con dirección),
+        luego renderiza la plantilla y guarda .docx/.pdf.
         """
         try:
-            # Formas relleno de IVA
             iva_val = cliente.get("iva", "").lower()
             circ = lambda cond: "●" if cond else "○"
             iva_ctx = {
@@ -117,25 +113,24 @@ class RemitoGenerator:
                 "ivaConsFinal": circ(iva_val == "cons. final")
             }
 
-            # Primero insertamos en BD y obtenemos el ID real
             remito_id = self.insertar_en_bd(cliente, carrito, fecha_vencimiento)
             if remito_id is None:
                 return False
 
-            # Preparamos contexto para la plantilla
             ctx = {
                 **iva_ctx,
-                "remitoID":          remito_id,  # usamos el ID de la BD
+                "remitoID":          remito_id,
                 "fechaInicioRemito": datetime.now().date().isoformat(),
                 "horaInicioRemito":  datetime.now().time().strftime("%H:%M:%S"),
                 "fechaVencRemito":   fecha_vencimiento.isoformat() if fecha_vencimiento else "",
                 "clienteNombre":     f"{cliente.get('nombre','')} {cliente.get('apellido','')}".strip(),
                 "clienteCUIT_CUIL":  cliente.get("cuit",""),
                 "clienteDireccion":  cliente.get("direccion",""),
-                "%%tabla_placeholder_remito%%": "%%tabla_placeholder_remito%%"
+                "%%tabla_placeholder_remito%%": "%%tabla_placeholder_remito%%",
+                # ➡️ MOD: ponemos aquí el ID
+                "clienteID":         self.clienteID
             }
 
-            # Renderizamos y guardamos
             doc = DocxTemplate(self.plantilla)
             doc.render(ctx)
             self.insert_table_in_doc(doc, carrito)

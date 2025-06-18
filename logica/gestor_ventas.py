@@ -1,5 +1,3 @@
-# src/logica/gestor_ventas.py
-
 import customtkinter as ctk
 from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
@@ -20,7 +18,6 @@ class LoteSelectionDialog(ctk.CTkToplevel):
         self.grab_set()
         self.result = None
 
-        # Texto indicativo
         label = ctk.CTkLabel(
             self,
             text=f"Para el producto ID {producto_id}, seleccione el lote a usar:",
@@ -28,7 +25,6 @@ class LoteSelectionDialog(ctk.CTkToplevel):
         )
         label.pack(padx=20, pady=10)
 
-        # Opciones formateadas
         opciones = [
             f"{l['numeroLote']} (Disp: {l['cantidad_disponible']})"
             for l in lotes_list
@@ -36,7 +32,6 @@ class LoteSelectionDialog(ctk.CTkToplevel):
         self.combo = ctk.CTkComboBox(self, values=opciones, width=250)
         self.combo.pack(padx=20, pady=5)
 
-        # Botón Aceptar
         btn = ctk.CTkButton(self, text="Aceptar", command=self.on_accept)
         btn.pack(pady=10)
 
@@ -60,7 +55,7 @@ class LoteSelectionDialog(ctk.CTkToplevel):
 class VentaManager:
     """
     Gestor de ventas. Confirma la venta dentro de una transacción,
-    aplica descuentos y genera la factura con datos de cliente.
+    aplica descuentos, guarda clienteID y genera la factura.
     """
     def confirmar_venta(self, carrito, descuento=0.0, cliente=None, tipo_factura=None, parent=None):
         try:
@@ -74,7 +69,7 @@ class VentaManager:
 
             total_bruto = 0.0
 
-            # 1) Procesar cada ítem: verificar stock y descontar lotes
+            # 1) Procesar cada ítem: verificar stock y descontar lotes...
             for item in carrito:
                 prod_id = item["prodID"]
                 qty = item["cantidad"]
@@ -90,7 +85,7 @@ class VentaManager:
                     return False, f"Stock insuficiente para producto ID {prod_id}."
                 total_bruto += float(fila["precio"]) * qty
 
-                # Obtener lotes ordenados por vencimiento
+                # Obtener lotes ordenados por vencimiento...
                 cursor.execute("""
                     SELECT loteID, cantidad_disponible, numeroLote
                     FROM lotes_productos
@@ -103,7 +98,7 @@ class VentaManager:
                     conexion.rollback()
                     return False, f"No hay suficiente stock en lotes para ID {prod_id}."
 
-                # Descontar por estrategia
+                # Descontar por estrategia (manual o automático)...
                 restante = qty
                 if config.manual_lote_selection:
                     dialogo = LoteSelectionDialog(parent, prod_id, lotes)
@@ -163,15 +158,31 @@ class VentaManager:
             dcto = float(descuento)
             total_neto = total_bruto * (1 - dcto/100)
 
-            # 3) Insertar factura con descuento
+            # 3) Obtener clienteID antes de insertar factura
+            cliente_id = None
+            if cliente and cliente.get("cuit"):
+                cursor.execute(
+                    "SELECT clienteID FROM clientes WHERE `cuil-cuit` = %s",
+                    (cliente["cuit"],)
+                )
+                row = cursor.fetchone()
+                cliente_id = row["clienteID"] if row else None
+
+            # ➡️ MOD: inyectamos el clienteID en el dict para que FacturaGenerator lo use
+            if cliente is not None:
+                cliente["clienteID"] = cliente_id
+
+            # 4) Insertar factura incluyendo clienteID
             cursor.execute("""
                 INSERT INTO facturas
-                  (fechaEmision, horaEmision, total_neto, total_bruto, descuento, tipoFactura)
-                VALUES(CURRENT_DATE, CURRENT_TIME, %s, %s, %s, %s)
-            """, (total_neto, total_bruto, dcto, tipo_factura or "B"))
+                  (clienteID, fechaEmision, horaEmision,
+                   total_neto, total_bruto, descuento, tipoFactura)
+                VALUES (%s, CURRENT_DATE, CURRENT_TIME,
+                        %s, %s, %s, %s)
+            """, (cliente_id, total_neto, total_bruto, dcto, tipo_factura or "B"))
             factura_id = cursor.lastrowid
 
-            # 4) Insertar detalle de factura
+            # 5) Insertar detalle de factura
             for item in carrito:
                 pid = item["prodID"]
                 qty = item["cantidad"]
@@ -186,7 +197,7 @@ class VentaManager:
                     VALUES (%s,%s,%s,%s)
                 """, (factura_id, pid, qty, precio_unit))
 
-            # 5) Generar documento .docx/.pdf con cliente y descuento
+            # 6) Generar documento .docx/.pdf con cliente y descuento
             fg = FacturaGenerator()
             ok = fg.generar_factura_con_transaccion(
                 parent, conexion, factura_id, cliente=cliente
@@ -195,7 +206,7 @@ class VentaManager:
                 conexion.rollback()
                 return False, "Generación de factura cancelada; venta no registrada."
 
-            # 6) Commit final
+            # 7) Commit final
             conexion.commit()
             return True, "Venta confirmada y factura generada exitosamente."
 
