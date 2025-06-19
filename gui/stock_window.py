@@ -196,6 +196,7 @@ class StockWindow(ctk.CTkToplevel):
         # Resto de la configuración de columnas, etc.
         if origen == "Stock":
             columns = ("ID", "Nombre", "Precio", "Stock", "Disponibilidad", "Vencimiento", "Detalle")
+            self.btn_agregar.configure(state="disabled")
             self.btn_modificar.configure(state="normal")
             self.btn_eliminar.configure(state="normal")
             self.label_stock.grid_remove()
@@ -207,6 +208,7 @@ class StockWindow(ctk.CTkToplevel):
             self.cargar_productos()
         elif origen == "Vademécum":
             columns = ("Nombre Comercial", "Presentación", "Acción Farmacológica", "Principio Activo", "Laboratorio")
+            self.btn_agregar.configure(state="normal")
             self.btn_modificar.configure(state="disabled")
             self.btn_eliminar.configure(state="disabled")
             self.label_stock.grid(row=2, column=0, padx=10, pady=5, sticky="e")
