@@ -68,20 +68,39 @@ class StockWindow(ctk.CTkToplevel):
         # --- Sección de tabla ---
         self.frame_tabla = ctk.CTkFrame(self)
         self.frame_tabla.pack(fill="both", expand=True, padx=20, pady=(5, 10))
+
         self.tree = ttk.Treeview(self.frame_tabla, show="headings")
         self.tree.grid(row=0, column=0, sticky="nsew")
+
+        # Tags de colores
         self.tree.tag_configure("critical", background="#ffcccc", foreground="#660000")
-        self.tree.tag_configure("warning", background="#ffffcc", foreground="#666600")
-        self.tree.tag_configure("ok", background="#ccffcc", foreground="#006600")
-        self.vscrollbar = ctk.CTkScrollbar(self.frame_tabla, orientation="vertical", command=self.tree.yview)
+        self.tree.tag_configure("warning",  background="#ffffcc", foreground="#666600")
+        self.tree.tag_configure("ok",       background="#ccffcc", foreground="#006600")
+
+        # Scrollbars
+        self.vscrollbar = ctk.CTkScrollbar(
+            self.frame_tabla, orientation="vertical", command=self.tree.yview
+        )
         self.vscrollbar.grid(row=0, column=1, sticky="ns")
-        self.hscrollbar = ctk.CTkScrollbar(self.frame_tabla, orientation="horizontal", command=self.tree.xview)
+
+        self.hscrollbar = ctk.CTkScrollbar(
+            self.frame_tabla, orientation="horizontal", command=self.tree.xview
+        )
         self.hscrollbar.grid(row=1, column=0, columnspan=2, sticky="ew")
-        self.tree.configure(yscrollcommand=self.vscrollbar.set, xscrollcommand=self.hscrollbar.set)
+
+        self.tree.configure(
+            yscrollcommand=self.vscrollbar.set,
+            xscrollcommand=self.hscrollbar.set
+        )
+
         self.frame_tabla.rowconfigure(0, weight=1)
         self.frame_tabla.columnconfigure(0, weight=1)
-        self.tree.bind("<Double-1>", self.mostrar_detalles)
+
+        # Bindings para doble clic y selección
+        self.tree.unbind("<Double-1>")  
+        self.tree.bind("<Double-1>", self._on_double_click)
         self.tree.bind("<<TreeviewSelect>>", self.cargar_datos_seleccionados)
+
         
         # --- Sección de formulario ---
         self.frame_form = ctk.CTkFrame(self)
@@ -219,7 +238,7 @@ class StockWindow(ctk.CTkToplevel):
             self.entry_vencimiento.grid(row=4, column=1, padx=10, pady=5, sticky="w")
             self.cargar_vademecum()
         elif origen == "Archivado":
-            columns = ("ID", "Nombre", "Precio", "Stock")
+            columns = ("ID", "Nombre", "Precio", "Stock", "Razón")            
             self.btn_modificar.configure(state="disabled")
             self.btn_eliminar.configure(state="disabled")
             self.label_stock.grid_remove()
@@ -331,10 +350,27 @@ class StockWindow(ctk.CTkToplevel):
                 prod["prodID"],
                 prod["nombre"],
                 prod["precio"],
-                prod["stock"]
+                prod["stock"],
+                prod.get("razonArchivado", "")
             ))
         self.ajustar_ancho_columnas()
 
+    def _on_double_click(self, event):
+        if self.combo_busqueda.get() == "Archivado":
+            self.mostrar_motivo_baja(event)
+        else:
+            self.mostrar_detalles(event)
+
+    def mostrar_motivo_baja(self, event):
+        sel = self.tree.focus()
+        if not sel:
+            return
+        razon = self.tree.set(sel, "Razón")
+        messagebox.showinfo(
+            "Motivo de baja",
+            razon or "No hay motivo registrado.",
+            parent=self
+        )
     
     def ajustar_ancho_columnas(self):
         tree_font = tkFont.nametofont("TkDefaultFont")

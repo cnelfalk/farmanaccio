@@ -1,5 +1,7 @@
 # src/logica/gestor_usuarios.py
 
+from utils.security import hash_password, verify_password
+
 from datos.conexion_bd import ConexionBD
 from mysql.connector import Error
 
@@ -31,7 +33,7 @@ class UsuarioManager:
             cursor.close()
             conexion.close()
             if resultado:
-                if resultado["password"] == password:
+                if verify_password(password, resultado["password"]):
                     if resultado.get("activo", 0) != 1:
                         return "inactivo"
                     return resultado
@@ -45,17 +47,27 @@ class UsuarioManager:
             conexion = ConexionBD.obtener_conexion()
             if conexion is None:
                 return False
+
+            # 1) Generar hash de la contraseña
+            hashed = hash_password(password)
+
+            # 2) Insertar usuario con contraseña encriptada
             cursor = conexion.cursor()
             cursor.execute("USE farmanaccio_db")
-            cursor.execute("INSERT INTO usuarios (usuario, password, role) VALUES (%s, %s, %s)",
-                           (usuario, password, rol))
+            cursor.execute(
+                "INSERT INTO usuarios (usuario, password, role) VALUES (%s, %s, %s)",
+                (usuario, hashed, rol)
+            )
             conexion.commit()
+
             cursor.close()
             conexion.close()
             return True
+
         except Error as e:
             print("Error al crear usuario:", e)
             return False
+
 
     def obtener_usuarios(self) -> list:
         try:

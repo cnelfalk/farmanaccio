@@ -1,20 +1,31 @@
 # src/principal.py
+
 import os
 import customtkinter as ctk
 from pathlib import Path
+
 from datos.crear_tablas import TablaCreator
+
+# ① Importar la función de migración
+from scripts.migrate_passwords import migrar_passwords
 
 # Configuración del tema y apariencia de CustomTkinter
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme(Path(__file__).parent / "farmanaccio-theme.json")
 
 def principal():
-    # 1. Crear la base de datos y las tablas correspondientes (incluyendo la tabla vademecum).
+    # 0. Migrar contraseñas (hash de las existentes en texto plano)
+    try:
+        migrar_passwords()
+        print("Migración de contraseñas completada.")
+    except Exception as e:
+        print("Error al migrar contraseñas:", e)
+    
+    # 1. Crear la base de datos y las tablas correspondientes
     creador = TablaCreator()
     creador.crear_base_de_datos_y_tablas()
     
-    # 2. Ejecutar la migración del vademecum (esto se ejecutará cada vez que se inicie el sistema,
-    #    pero internamente se verificará si la tabla ya tiene registros y, de ser así, se obvia)
+    # 2. Ejecutar la migración del vademécum
     current_dir = os.path.dirname(os.path.abspath(__file__))
     ruta_excel = os.path.join(current_dir, "datos", "vademecum-marzo2025.xlsx")
     from datos.migrar_vademecum import migrar_vademecum
