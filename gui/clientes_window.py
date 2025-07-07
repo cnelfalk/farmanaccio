@@ -62,6 +62,7 @@ class ClientesWindow(ctk.CTkToplevel):
         self.frame_tree.rowconfigure(0, weight=1)
         self.frame_tree.columnconfigure(0, weight=1)
 
+        self.tree.bind("<Double-1>", self._on_double_click)
         # placeholder para el mensaje “No hay…”
         self._lbl_no_data = None
 
@@ -105,12 +106,34 @@ class ClientesWindow(ctk.CTkToplevel):
         self.btn_agregar.grid(  row=0,column=0,padx=5)
         self.btn_modificar.grid(row=0,column=1,padx=5)
         self.btn_eliminar.grid( row=0,column=2,padx=5)
+        self.btn_restaurar = ctk.CTkButton(self.frame_btns, text="Restaurar", width=100,
+                                   fg_color="green", command=self._restaurar_cliente)
 
         self.btn_volver = ctk.CTkButton(self,text="Volver",command=self.destroy,width=120)
         self.btn_volver.pack(pady=(0,12))
 
         self.after(150, lambda:self.iconbitmap(icono_logotipo))
         self._cargar_por_filtro()
+
+    def _on_double_click(self, event):
+        # Solo si estamos en la vista Archivados
+        if self.filter_var.get() != "Archivados":
+            return
+
+        sel = self.tree.focus()
+        if not sel:
+            return
+
+        # ID de la fila seleccionada
+        cid = int(self.tree.item(sel, "values")[0])
+        cliente = self.clientes_map.get(cid, {})
+
+        razon = cliente.get("razonArchivado", "No hay razón registrada.")
+        messagebox.showinfo(
+            "Razón de archivado",
+            razon,
+            parent=self
+        )
 
     def _clear_no_data(self):
         if self._lbl_no_data:
@@ -127,19 +150,46 @@ class ClientesWindow(ctk.CTkToplevel):
             self.tree.insert("", "end", values=vals)
         self._ajustar_id()
 
+    def _restaurar_cliente(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showwarning("Atención", "Seleccione un cliente para restaurar.", parent=self)
+            return
+        cid = int(self.tree.item(sel[0], "values")[0])
+        if messagebox.askyesno("Confirmar", "¿Desea restaurar este cliente?", parent=self):
+            if self.cliente_manager.restaurar_cliente(cid):
+                messagebox.showinfo("Éxito", "Cliente restaurado.")
+                self._cargar_por_filtro()
+            else:
+                messagebox.showerror("Error", "No se pudo restaurar el cliente.")
+
+
     def _cargar_por_filtro(self, *a):
         self._clear_no_data()
-        estado = 1 if self.filter_var.get()=="Activos" else 0
+        estado = 1 if self.filter_var.get() == "Activos" else 0
+
         todos = self.cliente_manager.obtener_clientes()
-        filt = [c for c in todos if c.get("activo",1)==estado]
-        if estado==0 and not filt:
+        filt = [c for c in todos if c.get("activo", 1) == estado]
+
+        # Si no hay datos archivados
+        if estado == 0 and not filt:
             self.tree.delete(*self.tree.get_children())
             self._lbl_no_data = ctk.CTkLabel(
-                self.frame_tree, text="No hay clientes archivados.",
-                font=("Arial",12), fg_color="#823F2A"
+                self.frame_tree,
+                text="No hay clientes archivados.",
+                font=("Arial", 12),
+                fg_color="#823F2A"
             )
-            self._lbl_no_data.pack(expand=True,pady=20)
+            self._lbl_no_data.pack(expand=True, pady=20)
             return
+
+        # Mostrar u ocultar botón Restaurar
+        if estado == 0 and filt:
+            self.btn_restaurar.grid(row=0, column=3, padx=5)
+        else:
+            self.btn_restaurar.grid_forget()
+
+        # Poblamos el treeview
         self._poblar(filt)
 
     def _buscar(self):
@@ -214,13 +264,21 @@ class ClientesWindow(ctk.CTkToplevel):
             messagebox.showerror("Error","No se pudo actualizar cliente.")
 
     def _archivar(self):
-        if not self.cliente_actual_id: return
-        if messagebox.askyesno("Confirmar","¿Archivar este cliente?"):
-            if self.cliente_manager.eliminar_cliente(self.cliente_actual_id):
-                messagebox.showinfo("Éxito","Cliente archivado.")
-                self._cargar_por_filtro()
-            else:
-                messagebox.showerror("Error","No se pudo archivar cliente.")
+        if not self.cliente_actual_id:
+            return
+
+        from utils.utilidades import CTkPromptArchivado
+        prompt = CTkPromptArchivado(self, titulo="Archivar cliente", mensaje="Motivo de archivado:")
+        razon = prompt.resultado
+        if razon is None:
+            return
+
+        if self.cliente_manager.eliminar_cliente(self.cliente_actual_id, razon.strip()):
+            messagebox.showinfo("Éxito", "Cliente archivado.")
+            self._cargar_por_filtro()
+        else:
+            messagebox.showerror("Error", "No se pudo archivar cliente.")
+
 
 if __name__=="__main__":
     root=tk.Tk(); root.withdraw()

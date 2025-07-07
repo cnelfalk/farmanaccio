@@ -331,11 +331,14 @@ class StockManager:
     def eliminar_producto(self, id_producto: int, razon_archivado: str) -> bool:
         """
         Archiva un producto (activo=0, stock=0) y guarda razonArchivado.
+        Retorna True si el UPDATE de productos afectó filas.
         """
         try:
             cnx = ConexionBD.obtener_conexion()
             cur = cnx.cursor()
             cur.execute("USE farmanaccio_db")
+
+            # 1) Actualizar productos y capturar cuántas filas cambian
             cur.execute("""
                 UPDATE productos
                    SET activo = 0,
@@ -343,17 +346,22 @@ class StockManager:
                        razonArchivado = %s
                  WHERE prodID = %s
             """, (razon_archivado, id_producto))
-            # También dejar a 0 los lotes
+            productos_afectados = cur.rowcount
+
+            # 2) Actualizar lotes (no nos interesa su rowcount)
             cur.execute("""
                 UPDATE lotes_productos
                    SET cantidad_disponible = 0
                  WHERE prodID = %s
             """, (id_producto,))
+
             cnx.commit()
-            ok = cur.rowcount > 0
             cur.close()
             cnx.close()
-            return ok
+
+            # Devolvemos True si sí se modificó el registro en 'productos'
+            return productos_afectados > 0
+
         except Error as e:
             messagebox.showerror("Error al archivar producto", str(e))
             return False

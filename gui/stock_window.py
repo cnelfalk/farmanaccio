@@ -502,23 +502,21 @@ class StockWindow(ctk.CTkToplevel):
     def eliminar(self):
         sel = self.tree.focus()
         if not sel:
-            return messagebox.showerror("Error","Seleccione un producto.",parent=self)
+            return messagebox.showerror("Error", "Seleccione un producto.", parent=self)
         prod_id = self.tree.item(sel, "values")[0]
 
-        # Reutilizamos simpledialog de clientes
-        razon = simpledialog.askstring(
-            "Razón de archivado",
-            "Indique el motivo para archivar este producto:",
-            parent=self
-        )
+        from utils.utilidades import CTkPromptArchivado
+        prompt = CTkPromptArchivado(parent=self)
+        razon = prompt.resultado
         if razon is None:
-            return
+            return  # cancelado
 
         if self.stock_manager.eliminar_producto(prod_id, razon.strip()):
-            messagebox.showinfo("Éxito","Producto archivado.", parent=self)
+            messagebox.showinfo("Éxito", "Producto archivado.", parent=self)
             self.cambiar_origen(self.combo_busqueda.get())
         else:
-            messagebox.showerror("Error","No se pudo archivar el producto.", parent=self)
+            messagebox.showerror("Error", "No se pudo archivar el producto.", parent=self)
+
     
     def restaurar_producto(self):
         selected_item = self.tree.focus()

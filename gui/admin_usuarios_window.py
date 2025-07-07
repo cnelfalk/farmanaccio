@@ -1,5 +1,6 @@
 # src/gui/admin_usuarios_window.py
 
+from utils.utilidades import CTkPromptArchivado
 from tkinter import StringVar, simpledialog, messagebox
 import customtkinter as ctk
 from customtkinter import CTkToplevel, CTkScrollableFrame
@@ -165,13 +166,9 @@ class AdminUsuariosWindow(CTkToplevel):
             messagebox.showerror("Error", "No se pudo modificar el usuario.")
 
     def eliminar_usuario(self, id_):
-        # Reutilizamos el simpledialog de clientes
-        razon = simpledialog.askstring(
-            "Razón de archivado",
-            "Indique el motivo para archivar este usuario:",
-            parent=self
-        )
-        if razon is None:  # canceló
+        prompt = CTkPromptArchivado(parent=self)
+        razon = prompt.resultado
+        if razon is None:  # Cancelado
             return
 
         ok = self.usuario_manager.eliminar_usuario(id_, razon.strip())

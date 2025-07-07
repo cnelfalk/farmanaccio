@@ -1,5 +1,6 @@
 # src/utils/utilidades.py
 from tkinter import messagebox
+import customtkinter as ctk
 
 class Utilidades:
     @staticmethod
@@ -50,6 +51,44 @@ class Utilidades:
             messagebox.showwarning("Advertencia", "El stock no puede ser negativo.", parent=parent)
             return False
         return True
+
+class CTkPromptArchivado(ctk.CTkToplevel):
+    def __init__(self, parent=None, titulo="Archivar", mensaje="Motivo de archivado:"):
+        super().__init__(parent)
+        self.title(titulo)
+        self.grab_set()
+        self.resizable(False, False)
+        self.resultado = None
+
+        w, h = 400, 170
+        sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
+        x, y = (sw - w)//2, (sh - h)//2
+        self.geometry(f"{w}x{h}+{x}+{y}")
+
+        ctk.CTkLabel(self, text=mensaje, font=("Arial", 13)).pack(pady=(20, 10))
+        self.entry = ctk.CTkEntry(self, placeholder_text="Ej: Producto vencido o descontinuado", width=300)
+        self.entry.pack(pady=5)
+
+        btns = ctk.CTkFrame(self, fg_color="transparent")
+        btns.pack(pady=15)
+        ctk.CTkButton(btns, text="Cancelar", width=120, command=self.cancelar).pack(side="left", padx=5)
+        ctk.CTkButton(btns, text="Aceptar", width=120, command=self.aceptar).pack(side="left", padx=5)
+
+        self.entry.focus()
+        self.bind("<Return>", lambda e: self.aceptar())
+        self.protocol("WM_DELETE_WINDOW", self.cancelar)
+        self.wait_window()
+
+    def aceptar(self):
+        texto = self.entry.get().strip()
+        if texto:
+            self.resultado = texto
+            self.destroy()
+
+    def cancelar(self):
+        self.resultado = None
+        self.destroy()
+
 
 # Ejemplo de uso:
 if __name__ == "__main__":

@@ -40,19 +40,28 @@ class ClienteManager:
             if cnx is None: return []
             cur = cnx.cursor(dictionary=True)
             cur.execute("USE farmanaccio_db")
+            # Incluimos razonArchivado en la consulta
             cur.execute("""
-              SELECT clienteID, nombre, apellido,
+              SELECT clienteID,
+                     nombre,
+                     apellido,
                      `cuil-cuit` AS cuil,
-                     telefono, email, direccion,
-                     iva, activo
+                     telefono,
+                     email,
+                     direccion,
+                     iva,
+                     activo,
+                     razonArchivado
                 FROM clientes
             """)
             rows = cur.fetchall()
-            cur.close(); cnx.close()
+            cur.close()
+            cnx.close()
             return rows
         except Error as e:
-            messagebox.showerror("Error al obtener clientes",str(e))
+            messagebox.showerror("Error al obtener clientes", str(e))
             return []
+
 
     def actualizar_cliente(self, cid:int, cliente:dict) -> bool:
         try:
@@ -80,31 +89,35 @@ class ClienteManager:
             messagebox.showerror("Error al actualizar cliente",str(e))
             return False
 
-    def eliminar_cliente(self, cid:int) -> bool:
-        """
-        Marca activo=0 y pide razón.
-        """
-        razon = simpledialog.askstring(
-            "Razón de archivado",
-            "Indique el motivo de archivar este cliente:",
-            parent=None
-        )
-        if razon is None:
-            return False
+    def eliminar_cliente(self, cid: int, razon: str) -> bool:
         try:
             cnx = ConexionBD.obtener_conexion()
-            if cnx is None: return False
+            if cnx is None:
+                return False
             cur = cnx.cursor()
             cur.execute("USE farmanaccio_db")
             cur.execute("""
-              UPDATE clientes
-                 SET activo=0,
-                     razonArchivado=%s
-               WHERE clienteID=%s
-            """, (razon.strip(), cid))
+                UPDATE clientes
+                SET activo = 0,
+                    razonArchivado = %s
+                WHERE clienteID = %s
+            """, (razon, cid))
             cnx.commit()
             cur.close(); cnx.close()
             return True
         except Error as e:
-            messagebox.showerror("Error al archivar cliente",str(e))
+            messagebox.showerror("Error al archivar cliente", str(e))
+            return False
+    
+    def restaurar_cliente(self, cliente_id: int) -> bool:
+        try:
+            cnx = ConexionBD.obtener_conexion()
+            cur = cnx.cursor()
+            cur.execute("USE farmanaccio_db")
+            cur.execute("UPDATE clientes SET activo = 1 WHERE clienteID = %s", (cliente_id,))
+            cnx.commit()
+            cur.close(); cnx.close()
+            return True
+        except Error as e:
+            messagebox.showerror("Error al restaurar cliente", str(e))
             return False
